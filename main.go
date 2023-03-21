@@ -1,14 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
 	_ "github.com/pingcap/tidb/parser/test_driver"
 )
 
-func parse(sql string) (*ast.StmtNode, error) {
+func parse(sql string) (ast.StmtNode, error) {
 	p := parser.New()
 
 	stmtNodes, _, err := p.Parse(sql, "", "")
@@ -16,14 +18,36 @@ func parse(sql string) (*ast.StmtNode, error) {
 		return nil, err
 	}
 
-	return &stmtNodes[0], nil
+	if len(stmtNodes) != 1 {
+		return nil, fmt.Errorf("invalid statement")
+	}
+
+	return stmtNodes[0], nil
+}
+
+func sanitize(stmt ast.StmtNode) ast.StmtNode {
+	switch stmt.(type) {
+	case *ast.UpdateStmt:
+		// TODO: sanitize update statement
+		return stmt
+	default:
+		return stmt
+	}
 }
 
 func main() {
-	astNode, err := parse("SELECT a, b FROM t")
-	if err != nil {
-		fmt.Printf("parse error: %v\n", err.Error())
-		return
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			break
+		}
+
+		stmt, _ := parse(line)
+		if stmt != nil {
+			fmt.Println(stmt.Text())
+		} else {
+			fmt.Print(line)
+		}
 	}
-	fmt.Printf("%v\n", *astNode)
 }
