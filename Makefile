@@ -1,10 +1,12 @@
 default:
-	cat data.sql | go run main.go
+	cat input.sql | go run *.go
 
 diff:
-	cat data.sql | go run main.go > data2.sql
-	diff data.sql data2.sql | head -n 1
+	cat input.sql | go run *.go > output.sql
+	diff input.sql output.sql | head -n 1
 
 test:
-	cat data.sql | go run main.go > data2.sql
-	diff data.sql data2.sql
+	cat input.sql | go run *.go > output.sql
+	mysql -u root -e 'DROP DATABASE IF EXISTS wfp_gp_development; CREATE DATABASE wfp_gp_development;'
+	mysql -u root wfp_gp_development < schema.sql
+	mysql -u root wfp_gp_development < output.sql

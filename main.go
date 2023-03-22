@@ -10,116 +10,75 @@ import (
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
-	"github.com/pingcap/tidb/parser/test_driver"
 	_ "github.com/pingcap/tidb/parser/test_driver"
+
+	"gonum.org/v1/gonum/mathext/prng"
 )
 
 // Preserves non-parseable lines (assuming they are comments).
-const COMMENTS = true
+const doComments = true
 
 // Preserves INSERT statements (disable to make debug printfs readable).
-const INSERTS = true
+const doInserts = true
 
 // Preserves non-insert lines (LOCK/UNLOCK/SET/...).
-const MISC = true
+const doMisc = true
 
-// Does silly trivial scrambling as POC
-const REVERSE = false
-
-type scrubber struct {
-}
-
-func (v *scrubber) Enter(in ast.Node) (ast.Node, bool) {
-	switch st := in.(type) {
-	case *test_driver.ValueExpr:
-		switch st.Kind() {
-		case test_driver.KindString:
-			scrubbed := test_driver.Datum{}
-			scrubbed.SetString(v.scrubString(st.Datum.GetString()))
-			return &test_driver.ValueExpr{Datum: scrubbed}, true
-		}
-	}
-	return in, false
-}
-
-func (v *scrubber) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
-
-func (v *scrubber) scrubString(s string) string {
-	// TODO: recognize (& sanitize?) all well-formed YAML, JSON
-	if strings.Index(s, "\n") >= 0 {
-		return s
-	}
-	if REVERSE {
-		result := ""
-		for _, v := range s {
-			result = string(v) + result
-		}
-		return result
-	}
-	return s
-}
-
-func parse(sql string) (ast.StmtNode, error) {
-	p := parser.New()
-
-	stmtNodes, _, err := p.Parse(sql, "", "")
+// Turns an AST back into a string.
+func restore(stmt ast.StmtNode) string {
+	buf := new(bytes.Buffer)
+	ctx := format.NewRestoreCtx(format.RestoreKeyWordUppercase|format.RestoreNameBackQuotes|format.RestoreStringSingleQuotes|format.RestoreStringWithoutDefaultCharset, buf)
+	err := stmt.Restore(ctx)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-
-	if len(stmtNodes) != 1 {
-		return nil, fmt.Errorf("invalid statement")
-	}
-
-	return stmtNodes[0], nil
+	s := buf.String()
+	s = strings.ReplaceAll(s, "\n", "\\n")
+	return s + ";\n"
 }
 
-func sanitize(stmt ast.StmtNode) ast.StmtNode {
+// Attempts to remove sensitive data from an AST. Returns nil if the entire statement should be dropped.
+func sanitize(stmt ast.StmtNode) (ast.StmtNode, bool) {
 	switch st := stmt.(type) {
+	// for table name: st.Table.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName).Name
+	// for raw values: st.Lists[0][0], etc...
 	case *ast.InsertStmt:
-		v := &scrubber{}
-		// fmt.Printf("%+v\n", st.Table.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName).Name)
-		// fmt.Printf("%d %+v\n", len(st.Lists), st.Lists[0][0])
+		v := &scrubber{source: prng.NewMT19937()}
 		st.Accept(v)
-		buf := new(bytes.Buffer)
-		ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, buf)
-		st.Restore(ctx)
-		s := buf.String()
-		s = strings.ReplaceAll(s, "\n", "\\n")
-		s = s + ";"
-		if INSERTS {
-			st, _ := parse(s)
-			return st
+		if doInserts {
+			return st, true
 		} else {
-			return nil
+			return nil, true
 		}
 	default:
-		if MISC {
-			return stmt
+		if doMisc {
+			return stmt, false
 		}
-		return nil
+		return nil, true
 	}
 }
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
+	p := parser.New()
+
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			break
 		}
 
-		stmt, _ := parse(line)
-		if stmt != nil {
-			stmt = sanitize(stmt)
-			if stmt != nil {
-				fmt.Println(stmt.Text())
-			}
-		} else {
-			if COMMENTS {
-				fmt.Print(line)
+		stmts, _, err := p.Parse(line, "", "")
+		if (err != nil || len(stmts) == 0) && doComments {
+			fmt.Print(line)
+		}
+
+		for _, in := range stmts {
+			out, processed := sanitize(in)
+			if !processed {
+				fmt.Println(out.OriginalText())
+			} else if out != nil {
+				fmt.Print(restore(out))
 			}
 		}
 	}
