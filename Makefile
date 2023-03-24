@@ -1,12 +1,21 @@
-default:
-	cat input.sql | go run *.go
+bin: *.go
+	mkdir -p bin
+	env GOOS=darwin GOARCH=amd64 go build -o bin/sqlstream-darwin-amd64
+	env GOOS=darwin GOARCH=arm64 go build -o bin/sqlstream-darwin-arm64
+	touch bin
 
 benchmark:
 	cat benchmark.sql | go run *.go > /dev/null
 
+clean:
+	rm -Rf bin
+
 diff:
 	cat input.sql | go run *.go > output.sql
 	diff input.sql output.sql | head -n 1
+
+run:
+	cat input.sql | go run *.go
 
 test:
 	cat input.sql | go run *.go > output.sql
