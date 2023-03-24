@@ -1,7 +1,7 @@
 bin: *.go
 	mkdir -p bin
 	env GOOS=darwin GOARCH=amd64 go build -o bin/sqlstream-darwin-amd64
-	env GOOS=darwin GOARCH=arm64 go build -o bin/sqlstream-darwin-arm64
+	env GOOS=darwin GOARCH=arm64 go build -o bin/sqlstream-darwin-x86_64
 	touch bin
 
 benchmark:
