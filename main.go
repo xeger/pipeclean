@@ -43,9 +43,9 @@ func sanitize(stmt ast.StmtNode) (ast.StmtNode, bool) {
 	// for table name: st.Table.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName).Name
 	// for raw values: st.Lists[0][0], etc...
 	case *ast.InsertStmt:
-		v := &scrubber{source: prng.NewMT19937()}
-		st.Accept(v)
 		if doInserts {
+			v := &scrubber{source: prng.NewMT19937()}
+			st.Accept(v)
 			return st, true
 		} else {
 			return nil, true

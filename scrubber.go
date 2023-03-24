@@ -14,6 +14,10 @@ import (
 	"gonum.org/v1/gonum/mathext/prng"
 )
 
+var reEIN = regexp.MustCompile(`\d{2}-?\d{7}`)
+
+var reSSN = regexp.MustCompile(`\d{3}-?\d{2}-?\d{4}`)
+
 var reTelUS = regexp.MustCompile(`\d{3}-?\d{3}-?\d{4}`)
 
 type scrubber struct {
@@ -63,7 +67,6 @@ func (v *scrubber) mask(s string) string {
 // - email addresses
 // - YAML Ruby hashes
 func (v *scrubber) scrubString(s string) string {
-	// Scramble email addresses
 	if a, _ := mail.ParseAddress(s); a != nil {
 		at := strings.Index(a.Address, "@")
 		local, domain := a.Address[:at], a.Address[at+1:]
@@ -81,9 +84,10 @@ func (v *scrubber) scrubString(s string) string {
 		area = v.mask(area)
 		num = v.mask(num)
 		return fmt.Sprintf("%s-%s", area, num)
+	} else if reEIN.MatchString(s) || reSSN.MatchString(s) {
+		return v.mask(s)
 	}
 
-	// empty serialized hashes
 	if strings.Index(s, "--- !ruby/hash") == 0 {
 		return "{}"
 	}
