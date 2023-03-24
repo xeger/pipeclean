@@ -7,8 +7,6 @@ import (
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
 	_ "github.com/pingcap/tidb/parser/test_driver"
-
-	"gonum.org/v1/gonum/mathext/prng"
 )
 
 // Preserves non-parseable lines (assuming they are comments).
@@ -27,8 +25,7 @@ func scrubStmt(stmt ast.StmtNode) (ast.StmtNode, bool) {
 	// for raw values: st.Lists[0][0], etc...
 	case *ast.InsertStmt:
 		if doInserts {
-			v := &scrubber{source: prng.NewMT19937()}
-			st.Accept(v)
+			st.Accept(NewScrubber())
 			return st, true
 		} else {
 			return nil, true
