@@ -1,6 +1,9 @@
 default:
 	cat input.sql | go run *.go
 
+benchmark:
+	cat benchmark.sql | go run *.go > /dev/null
+
 diff:
 	cat input.sql | go run *.go > output.sql
 	diff input.sql output.sql | head -n 1
