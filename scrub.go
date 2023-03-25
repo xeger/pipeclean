@@ -1,46 +1,21 @@
-package main
+package sqlstream
 
 import (
 	"bytes"
 	"fmt"
 
 	"github.com/pingcap/tidb/parser"
-	"github.com/pingcap/tidb/parser/ast"
 	_ "github.com/pingcap/tidb/parser/test_driver"
 )
 
-// Preserves non-parseable lines (assuming they are comments).
-const doComments = true
-
-// Preserves INSERT statements (disable to make debug printfs readable).
-const doInserts = true
-
-// Preserves non-insert lines (LOCK/UNLOCK/SET/...).
-const doMisc = true
-
-// Attempts to remove sensitive data from an AST. Returns nil if the entire statement should be dropped.
-func scrubStmt(stmt ast.StmtNode) (ast.StmtNode, bool) {
-	switch st := stmt.(type) {
-	// for table name: st.Table.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName).Name
-	// for raw values: st.Lists[0][0], etc...
-	case *ast.InsertStmt:
-		if doInserts {
-			st.Accept(NewScrubber())
-			return st, true
-		} else {
-			return nil, true
-		}
-	default:
-		if doMisc {
-			return stmt, false
-		}
-		return nil, true
-	}
-}
-
-// Parallelizes scrubbing.
-func scrubLines(in <-chan string, out chan<- string) {
+// Scrub a sequence of lines received via in. Each line may comprise multiple statements,
+// which will recombined with a newline separator and transmitted to out.
+//
+// Because of the 1:1 mapping between sends and receives, this function can be used with
+// buffered channels provided the caller takes care to preserve ordering.
+func Scrub(in <-chan string, out chan<- string) {
 	p := parser.New()
+	sc := NewScrubber()
 	for line := range in {
 		buf := bytes.NewBufferString("")
 
@@ -50,7 +25,7 @@ func scrubLines(in <-chan string, out chan<- string) {
 		}
 
 		for _, in := range stmts {
-			out, processed := scrubStmt(in)
+			out, processed := sc.Scrub(in)
 			if !processed {
 				fmt.Fprintln(buf, out.OriginalText())
 			} else if out != nil {

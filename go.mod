@@ -1,4 +1,4 @@
-module sqlstream
+module github.com/xeger/sqlstream
 
 go 1.17
 

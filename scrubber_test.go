@@ -1,4 +1,4 @@
-package main
+package sqlstream
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 
 func mustChange(t *testing.T, a string) {
 	s := NewScrubber()
-	b := s.ScrubString(a)
+	b := s.scrubString(a)
 	if a == b {
 		t.Fatalf(`ScrubString(%q) = %q, want a scrambled value`, a, b)
 	}
