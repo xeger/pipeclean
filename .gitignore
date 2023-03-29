@@ -1,2 +1,4 @@
 /bin
+*.csv
+*.json
 *.sql

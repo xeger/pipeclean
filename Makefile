@@ -1,24 +1,24 @@
 bin: $(find . -type f -name '*.go')
 	mkdir -p bin
 	env GOOS=darwin GOARCH=amd64 go build -o bin/sqlstream-darwin-amd64
-	env GOOS=darwin GOARCH=arm64 go build -o bin/sqlstream-darwin-x86_64
+	env GOOS=darwin GOARCH=arm64 go build -o bin/sqlstream-darwin-arm64
 	touch bin
 
 benchmark:
-	cat benchmark.sql | go run cmd/sqlstream/*.go > /dev/null
+	cat benchmark.sql | go run *.go > /dev/null
 
 clean:
 	rm -Rf bin
 
 diff:
-	cat input.sql | go run cmd/sqlstream/*.go > output.sql
+	cat input.sql | go run *.go > output.sql
 	diff input.sql output.sql | head -n 1
 
 scrub-load:
-	cat input.sql | go run cmd/sqlstream/*.go > output.sql
+	cat input.sql | go run *.go > output.sql
 	mysql -u root -e 'DROP DATABASE IF EXISTS wfp_gp_development; CREATE DATABASE wfp_gp_development;'
 	mysql -u root wfp_gp_development < schema.sql
 	mysql -u root wfp_gp_development < output.sql
 
 scrub-stdout:
-	cat input.sql | go run cmd/sqlstream/*.go
+	cat input.sql | go run *.go

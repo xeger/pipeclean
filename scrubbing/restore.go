@@ -1,4 +1,4 @@
-package sqlstream
+package scrubbing
 
 import (
 	"bytes"

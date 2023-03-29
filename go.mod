@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
+	github.com/mb-14/gomarkov v0.0.0-20210216094942-a5b484cc0243 // indirect
 	github.com/pingcap/errors v0.11.5-0.20210425183316-da1aaba5fb63 // indirect
 	github.com/pingcap/log v0.0.0-20210625125904-98ed8e2eb1c7 // indirect
 	github.com/pingcap/tidb/parser v0.0.0-20230217143104-f4ca0821fb96 // indirect
