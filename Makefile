@@ -5,20 +5,17 @@ bin: $(find . -type f -name '*.go')
 	touch bin
 
 benchmark:
-	cat benchmark.sql | go run *.go > /dev/null
+	time cat benchmark.sql | ./sqlstream scrub > /dev/null
 
 clean:
 	rm -Rf bin
 
-diff:
-	cat input.sql | go run *.go > output.sql
-	diff input.sql output.sql | head -n 1
+city: city.markov.json
+	./sqlstream generate city.markov.json
 
-scrub-load:
-	cat input.sql | go run *.go > output.sql
-	mysql -u root -e 'DROP DATABASE IF EXISTS wfp_gp_development; CREATE DATABASE wfp_gp_development;'
-	mysql -u root wfp_gp_development < schema.sql
-	mysql -u root wfp_gp_development < output.sql
-
-scrub-stdout:
-	cat input.sql | go run *.go
+# TODO: turn the hit-rate check into a command (or do reinforcement learning?)
+city.markov.json: city.csv
+	cat city.csv | ./sqlstream train words 5 > city.markov.json
+	@ALL=$$(cat city.csv | wc -l); \
+HITS=$$(cat city.csv | ./sqlstream recognize --confidence=0.5 city.markov.json | wc -l); \
+echo "Hit rate: $${HITS}/$${ALL}"

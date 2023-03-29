@@ -1,0 +1,4 @@
+#! /bin/sh
+
+# Convenience wrapper for running sqlstream from source.
+exec go run main.go $@
