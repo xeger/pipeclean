@@ -10,18 +10,19 @@ import (
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/test_driver"
 	_ "github.com/pingcap/tidb/parser/test_driver"
+	"github.com/xeger/sqlstream/nlp"
 
 	"gonum.org/v1/gonum/mathext/prng"
 )
 
 // Preserves non-parseable lines (assuming they are comments).
-const doComments = true
+const doComments = false
 
 // Preserves INSERT statements (disable to make debug printfs readable).
 const doInserts = true
 
 // Preserves non-insert lines (LOCK/UNLOCK/SET/...).
-const doMisc = true
+const doMisc = false
 
 var reEIN = regexp.MustCompile(`\d{2}-?\d{7}`)
 
@@ -29,12 +30,16 @@ var reSSN = regexp.MustCompile(`\d{3}-?\d{2}-?\d{4}`)
 
 var reTelUS = regexp.MustCompile(`\(?\d{3}\)?[ -]?\d{3}-?\d{4}`)
 
+var reZip = regexp.MustCompile(`\d{5}(-\d{4})?`)
+
 type scrubber struct {
 	source *prng.MT19937
+	models []*nlp.Model
 }
 
-func NewScrubber() *scrubber {
+func NewScrubber(models []*nlp.Model) *scrubber {
 	return &scrubber{
+		models: models,
 		source: prng.NewMT19937(),
 	}
 }
@@ -83,12 +88,14 @@ func (sc *scrubber) Scrub(stmt ast.StmtNode) (ast.StmtNode, bool) {
 // - email addresses
 // - YAML Ruby hashes
 func (sc *scrubber) scrubString(s string) string {
-	if a, _ := mail.ParseAddress(s); a != nil {
-		at := strings.Index(a.Address, "@")
-		local, domain := a.Address[:at], a.Address[at+1:]
-		local = sc.mask(local)
-		domain = sc.mask(domain)
-		return fmt.Sprintf("%s@%s", local, domain)
+	if len(s) < 1024 {
+		if a, _ := mail.ParseAddress(s); a != nil {
+			at := strings.Index(a.Address, "@")
+			local, domain := a.Address[:at], a.Address[at+1:]
+			local = sc.mask(local)
+			domain = sc.mask(domain)
+			return fmt.Sprintf("%s@%s", local, domain)
+		}
 	}
 
 	if reTelUS.MatchString(s) {
@@ -100,7 +107,7 @@ func (sc *scrubber) scrubString(s string) string {
 		area = sc.mask(area)
 		num = sc.mask(num)
 		return fmt.Sprintf("%s-%s", area, num)
-	} else if reEIN.MatchString(s) || reSSN.MatchString(s) {
+	} else if reEIN.MatchString(s) || reSSN.MatchString(s) || reZip.MatchString(s) {
 		return sc.mask(s)
 	}
 
@@ -108,10 +115,18 @@ func (sc *scrubber) scrubString(s string) string {
 		return "{}"
 	}
 
+	for _, model := range sc.models {
+		// TODO: normalize spacing of s; apply only word or sentence models depending on number of spaces
+		if model.Recognize(s) > 0.8 {
+			// TODO -- determinism
+			return model.Generate()
+		}
+	}
+
 	return s
 }
 
-// Scrambles letters and numbers, preserving case sensitivity.
+// Scrambles letters and numbers; preserves case, punctuation, and special characters.
 // As a special case, preserves 0 (and thus the distribution of zero to nonzero).
 // Always returns the same output for a given input.
 func (sc *scrubber) mask(s string) string {

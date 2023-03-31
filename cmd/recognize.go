@@ -54,7 +54,7 @@ func recognize(cmd *cobra.Command, args []string) {
 			break
 		}
 		line = strings.TrimRight(line, "\r\n\t")
-		if model.Recognize(line, confidence) {
+		if model.Recognize(line) >= confidence {
 			fmt.Println(line)
 		}
 	}

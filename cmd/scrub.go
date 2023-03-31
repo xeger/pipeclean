@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 
 	"github.com/spf13/cobra"
+	"github.com/xeger/sqlstream/nlp"
 	"github.com/xeger/sqlstream/scrubbing"
 )
 
@@ -26,7 +28,44 @@ func init() {
 	scrubCmd.PersistentFlags().IntVar(&parallelism, "parallelism", runtime.NumCPU(), "lines to scrub at once")
 }
 
+func loadModels(paths []string) ([]*nlp.Model, error) {
+	models := make([]*nlp.Model, 0, 10)
+
+	for _, path := range paths {
+		fi, err := os.Stat(path)
+		if err != nil {
+			panic(err.Error())
+		}
+		if fi.IsDir() {
+			dir, err := os.ReadDir(path)
+			if err != nil {
+				panic(err.Error())
+			}
+			for _, dirent := range dir {
+				m, err := nlp.LoadModel(filepath.Join(path, dirent.Name()))
+				if err != nil {
+					panic(err.Error())
+				}
+				models = append(models, m)
+			}
+		} else {
+			m, err := nlp.LoadModel(path)
+			if err != nil {
+				panic(err.Error())
+			}
+			models = append(models, m)
+		}
+	}
+
+	return models, nil
+}
+
 func scrub(cmd *cobra.Command, args []string) {
+	models, err := loadModels(args)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	N := parallelism
 
 	in := make([]chan string, N)
@@ -34,7 +73,7 @@ func scrub(cmd *cobra.Command, args []string) {
 	for i := 0; i < N; i++ {
 		in[i] = make(chan string)
 		out[i] = make(chan string)
-		go scrubbing.Scrub(in[i], out[i])
+		go scrubbing.Scrub(models, in[i], out[i])
 	}
 	drain := func(to int) {
 		for i := 0; i < to; i++ {

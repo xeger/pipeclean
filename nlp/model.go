@@ -1,7 +1,10 @@
 package nlp
 
 import (
+	"encoding/json"
 	"math"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/mb-14/gomarkov"
@@ -9,7 +12,23 @@ import (
 
 type Model struct {
 	Chain     gomarkov.Chain `json:"chain"`
+	Name      string         `json:"name"`
 	Separator string         `json:"separator"`
+}
+
+func LoadModel(filename string) (*Model, error) {
+	d, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	m := Model{}
+	if err = json.Unmarshal(d, &m); err != nil {
+		return nil, err
+	}
+	name := filepath.Base(filename)
+	name = strings.TrimSuffix(name, filepath.Ext(name))
+	m.Name = name
+	return &m, nil
 }
 
 func NewModel(order int, separator string) *Model {
@@ -32,7 +51,10 @@ func (m Model) Generate() string {
 	return strings.Join(state[order:len(state)-1], m.Separator)
 }
 
-func (m Model) Recognize(input string, threshold float64) bool {
+func (m Model) Recognize(input string) float64 {
+	if len(input) < m.Chain.Order {
+		return 0
+	}
 	tokens := strings.Split(input, m.Separator)
 	logProb := float64(0)
 	pairs := gomarkov.MakePairs(tokens, m.Chain.Order)
@@ -44,8 +66,7 @@ func (m Model) Recognize(input string, threshold float64) bool {
 			logProb += math.Log10(0.05)
 		}
 	}
-	prob := math.Pow(10, logProb/math.Max(1, float64(len(pairs))))
-	return prob >= threshold
+	return math.Pow(10, logProb/math.Max(1, float64(len(pairs))))
 }
 
 func (m Model) Train(input string) {
