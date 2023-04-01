@@ -24,8 +24,13 @@ const doInserts = true
 // Preserves non-insert lines (LOCK/UNLOCK/SET/...).
 const doMisc = false
 
-var reStreetNum = regexp.MustCompile(`^#?\d{1,5}$`)
+// Numeric sequence (e.g. street address).
+var reNum = regexp.MustCompile(`^#?\d{1,5}$`)
 
+// Numeric sequence (e.g. street address) that may be part of a larger phrase.
+var reContainsNum = regexp.MustCompile(`#?\d{1,5}`)
+
+// Commonly-used street name suffix e.g. Ave, Blvd, Dr
 var reStreetSuffixUS = regexp.MustCompile(`^(?i)(Ave?n?u?e?|Dri?v?e?|Str?e?e?t|Wa?y)[.]?$`)
 
 var reTelUS = regexp.MustCompile(`^\(?\d{3}\)?[ -]?\d{3}-?\d{4}$`)
@@ -87,7 +92,7 @@ func (sc *scrubber) ScrubSQL(stmt ast.StmtNode) (ast.StmtNode, bool) {
 	}
 }
 
-// Scrubs recognized well-formed PII from a string, preserving all other values.
+// Masks recognized PII in a string, preserving other values.
 func (sc *scrubber) ScrubString(s string) string {
 	// Mask email addresses w/ consistent local and domain parts.
 	if len(s) < 1024 && strings.Index(s, " ") == -1 {
@@ -115,20 +120,22 @@ func (sc *scrubber) ScrubString(s string) string {
 		area = sc.mask(area)
 		num = sc.mask(num)
 		return fmt.Sprintf("%s-%s", area, num)
-	} else if reStreetNum.MatchString(s) || reZip.MatchString(s) {
+	} else if reNum.MatchString(s) || reZip.MatchString(s) {
 		return sc.mask(s)
 	} else if reStreetSuffixUS.MatchString(s) {
 		return s
 	}
 
-	// Mask each part of short phrases of 2-4 words (i.e. addresses and names).
-	spaces := strings.Count(s, " ")
-	if spaces > 0 && spaces < 4 {
-		words := strings.Fields(s)
-		for i, w := range words {
-			words[i] = sc.ScrubString(w)
+	// Mask each part of short phrases of 2-4 words that contain a numeric component.
+	if reContainsNum.MatchString(s) {
+		spaces := strings.Count(s, " ")
+		if spaces > 0 && spaces < 4 {
+			words := strings.Fields(s)
+			for i, w := range words {
+				words[i] = sc.ScrubString(w)
+			}
+			return strings.Join(words, " ")
 		}
-		return strings.Join(words, " ")
 	}
 
 	// Match against all models.
