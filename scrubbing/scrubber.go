@@ -24,13 +24,13 @@ const doInserts = true
 // Preserves non-insert lines (LOCK/UNLOCK/SET/...).
 const doMisc = false
 
-var reEIN = regexp.MustCompile(`\d{2}-?\d{7}`)
+var reStreetNum = regexp.MustCompile(`^#?\d{1,5}$`)
 
-var reSSN = regexp.MustCompile(`\d{3}-?\d{2}-?\d{4}`)
+var reStreetSuffixUS = regexp.MustCompile(`^(?i)(Ave?n?u?e?|Dri?v?e?|Str?e?e?t|Wa?y)[.]?$`)
 
-var reTelUS = regexp.MustCompile(`\(?\d{3}\)?[ -]?\d{3}-?\d{4}`)
+var reTelUS = regexp.MustCompile(`^\(?\d{3}\)?[ -]?\d{3}-?\d{4}$`)
 
-var reZip = regexp.MustCompile(`\d{5}(-\d{4})?`)
+var reZip = regexp.MustCompile(`^\d{5}(-\d{4})?$`)
 
 type scrubber struct {
 	source     *prng.MT19937
@@ -86,11 +86,9 @@ func (sc *scrubber) Scrub(stmt ast.StmtNode) (ast.StmtNode, bool) {
 }
 
 // Scrubs recognized well-formed PII from a string, preserving all other values.
-// Recognizes the following:
-// - email addresses
-// - YAML Ruby hashes
 func (sc *scrubber) scrubString(s string) string {
-	if len(s) < 1024 {
+	// Mask email addresses w/ consistent local and domain parts.
+	if len(s) < 1024 && strings.Index(s, " ") == -1 {
 		if a, _ := mail.ParseAddress(s); a != nil {
 			at := strings.Index(a.Address, "@")
 			local, domain := a.Address[:at], a.Address[at+1:]
@@ -100,6 +98,12 @@ func (sc *scrubber) scrubString(s string) string {
 		}
 	}
 
+	// Empty serialized Ruby YAML hashes.
+	if strings.Index(s, "--- !ruby/hash") == 0 {
+		return "{}"
+	}
+
+	// Mask well-known numeric formats and abbreviations.
 	if reTelUS.MatchString(s) {
 		dash := strings.Index(s, "-")
 		if dash < 0 {
@@ -109,18 +113,26 @@ func (sc *scrubber) scrubString(s string) string {
 		area = sc.mask(area)
 		num = sc.mask(num)
 		return fmt.Sprintf("%s-%s", area, num)
-	} else if reEIN.MatchString(s) || reSSN.MatchString(s) || reZip.MatchString(s) {
+	} else if reStreetNum.MatchString(s) || reZip.MatchString(s) {
 		return sc.mask(s)
+	} else if reStreetSuffixUS.MatchString(s) {
+		return s
 	}
 
-	if strings.Index(s, "--- !ruby/hash") == 0 {
-		return "{}"
+	// Mask each part of short phrases of 2-4 words (i.e. addresses and names).
+	spaces := strings.Count(s, " ")
+	if spaces > 1 && spaces < 4 {
+		words := strings.Fields(s)
+		for i, w := range words {
+			words[i] = sc.scrubString(w)
+		}
+		return strings.Join(words, " ")
 	}
 
 	for _, model := range sc.models {
 		if model.Recognize(s) >= sc.confidence {
 			if generator, ok := model.(nlp.Generator); ok {
-				return generator.Generate(s)
+				return nlp.ToSameCase(generator.Generate(s), s)
 			} else {
 				return sc.mask(s)
 			}

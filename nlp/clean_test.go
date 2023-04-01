@@ -7,11 +7,11 @@ import (
 )
 
 func TestClean(t *testing.T) {
-	test := func(input, expected string) {
-		if output := nlp.Clean(input); output != expected {
-			t.Errorf("nlp.Clean: expected '%s', got '%s'", expected, output)
+	assert := func(input, expected string) {
+		if actual := nlp.Clean(input); actual != expected {
+			t.Errorf("nlp.Clean: expected %q, got %q", expected, actual)
 		}
 	}
-	test("Hello, world!", "hello, world!")
-	test("   aHaHaHH    Ahah Hah", "ahahahh ahah hah")
+	assert("Hello, world!", "hello, world!")
+	assert("   aHaHaHH    Ahah Hah", "ahahahh ahah hah")
 }
