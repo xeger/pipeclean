@@ -1,6 +1,8 @@
 package nlp
 
 import (
+	"encoding/json"
+	"fmt"
 	"math"
 	"strings"
 
@@ -8,40 +10,67 @@ import (
 )
 
 type MarkovModel struct {
-	Chain     gomarkov.Chain `json:"chain"`
-	Name      string
-	Separator string `json:"separator"`
+	chain     gomarkov.Chain
+	separator string
 }
+
+type markovModelJSON struct {
+	Type      string         `json:"typ"`
+	Separator string         `json:"sep"`
+	Chain     gomarkov.Chain `json:"chain"`
+}
+
+const markovModelTypeID = "github.com/xeger/sqlstream/nlp.MarkovModel"
 
 func NewMarkovModel(order int, separator string) *MarkovModel {
 	return &MarkovModel{
-		Chain:     *gomarkov.NewChain(order),
-		Separator: separator,
+		chain:     *gomarkov.NewChain(order),
+		separator: separator,
 	}
+}
+
+func (m *MarkovModel) MarshalJSON() ([]byte, error) {
+	obj := markovModelJSON{Type: markovModelTypeID, Separator: m.separator, Chain: m.chain}
+	return json.Marshal(obj)
+}
+
+func (m *MarkovModel) UnmarshalJSON(b []byte) error {
+	var obj markovModelJSON
+	err := json.Unmarshal(b, &obj)
+	if err != nil {
+		return err
+	}
+	if obj.Type != markovModelTypeID {
+		return fmt.Errorf("Wrong type; expected '%s', got '%s'", markovModelTypeID, obj.Type)
+	}
+
+	m.chain = obj.Chain
+	m.separator = obj.Separator
+	return nil
 }
 
 // TODO: respect seed (need to improve gomarkov library)
 func (m *MarkovModel) Generate(seed string) string {
 	// seed = Clean(seed)
-	order := m.Chain.Order
+	order := m.chain.Order
 	state := make(gomarkov.NGram, 0)
 	for i := 0; i < order; i++ {
 		state = append(state, gomarkov.StartToken)
 	}
 	for state[len(state)-1] != gomarkov.EndToken {
-		next, _ := m.Chain.Generate(state[(len(state) - order):])
+		next, _ := m.chain.Generate(state[(len(state) - order):])
 		state = append(state, next)
 	}
-	return strings.Join(state[order:len(state)-1], m.Separator)
+	return strings.Join(state[order:len(state)-1], m.separator)
 }
 
 func (m *MarkovModel) Recognize(input string) float64 {
 	input = Clean(input)
-	tokens := strings.Split(input, m.Separator)
+	tokens := strings.Split(input, m.separator)
 	logProb := float64(0)
-	pairs := gomarkov.MakePairs(tokens, m.Chain.Order)
+	pairs := gomarkov.MakePairs(tokens, m.chain.Order)
 	for _, pair := range pairs {
-		prob, _ := m.Chain.TransitionProbability(pair.NextState, pair.CurrentState)
+		prob, _ := m.chain.TransitionProbability(pair.NextState, pair.CurrentState)
 		if prob > 0 {
 			logProb += math.Log10(prob)
 		} else {
@@ -53,6 +82,6 @@ func (m *MarkovModel) Recognize(input string) float64 {
 
 func (m *MarkovModel) Train(input string) {
 	input = Clean(input)
-	tokens := strings.Split(input, m.Separator)
-	m.Chain.Add(tokens)
+	tokens := strings.Split(input, m.separator)
+	m.chain.Add(tokens)
 }

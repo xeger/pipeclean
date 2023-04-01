@@ -1,3 +1,6 @@
+default:
+	cat input.sql | ./sqlstream scrub
+
 bin: $(find . -type f -name '*.go')
 	mkdir -p bin
 	env GOOS=darwin GOARCH=amd64 go build -o bin/sqlstream-darwin-amd64

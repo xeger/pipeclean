@@ -74,11 +74,11 @@ func loadModels(paths []string) ([]nlp.Model, error) {
 
 func scrub(cmd *cobra.Command, args []string) {
 	inputModels, err := loadModels(args)
-	models := expandModels(inputModels)
-
 	if err != nil {
 		panic(err.Error())
 	}
+
+	models := expandModels(inputModels)
 
 	N := parallelism
 
