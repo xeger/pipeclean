@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/xeger/sqlstream/nlp"
@@ -24,52 +24,73 @@ Prints a JSON representation of the model to stdout.`,
 
 func train(cmd *cobra.Command, args []string) {
 	var err error
-	var mode, sep string
-	var order int
+	var modelType, markovMode, markovSep string
+	var markovOrder int
 
-	if len(args) == 2 {
-		mode = args[0]
-		order, err = strconv.Atoi(args[1])
+	if len(args) == 1 {
+		parts := strings.Split(args[0], ":")
+		if len(parts) >= 1 {
+			modelType = parts[0]
+		}
+		if len(parts) >= 2 {
+			markovMode = parts[1]
+		}
+		if len(parts) >= 3 {
+			markovOrder, err = strconv.Atoi(parts[2])
+			if err != nil {
+				markovMode = "ERROR" // cause exit(1) below
+			}
+		}
+	}
+
+	switch modelType {
+	case "markov":
+		switch markovMode {
+		case "sentences":
+			markovSep = " "
+		case "words":
+			markovSep = ""
+		default:
+			fmt.Fprintln(os.Stderr, "Usage: sqlstream train <modelType>[param1:param2:...]")
+			fmt.Fprintln(os.Stderr, "Examples:")
+			fmt.Fprintln(os.Stderr, "  sqlstream train dict # dictionary-lookup model")
+			fmt.Fprintln(os.Stderr, "  sqlstream train markov:words:5 # markov word model of order 5")
+			fmt.Fprintln(os.Stderr, "  sqlstream train markov:sentences:3 # markov sentence model of order 5")
+			os.Exit(1)
+		}
+
+		reader := bufio.NewReader(os.Stdin)
+		model := nlp.NewMarkovModel(markovOrder, markovSep)
+
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				break
+			}
+			model.Train(line)
+		}
+
+		marshalled, err := model.MarshalJSON()
 		if err != nil {
-			mode = "ERROR" // cause exit(1) below
+			panic(err.Error())
 		}
-	}
+		fmt.Print(string(marshalled))
+	case "dict":
+		reader := bufio.NewReader(os.Stdin)
+		model := nlp.NewDictModel()
 
-	switch mode {
-	case "sentences":
-		sep = " "
-	case "words":
-		sep = ""
-	default:
-		fmt.Fprintln(os.Stderr, "Usage: sqlstream train <sentences|words> <order>")
-		os.Exit(1)
-	}
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				break
+			}
+			model.Train(line)
+		}
 
-	reader := bufio.NewReader(os.Stdin)
-	model := nlp.NewMarkovModel(order, sep)
-	corpus := make([]string, 0, 65535)
-
-	for {
-		line, err := reader.ReadString('\n')
+		marshalled, err := model.MarshalText()
 		if err != nil {
-			break
+			panic(err.Error())
 		}
-		corpus = append(corpus, nlp.Clean(line))
-		model.Train(line)
+		fmt.Print(string(marshalled))
 	}
-
-	miss := 0
-	for _, sample := range corpus {
-		if c := model.Recognize(sample); c < 0.95 {
-			miss++
-		}
-	}
-	hitRate := 1.0 - float64(miss)/float64(len(corpus))
-	fmt.Fprintln(os.Stderr, "Trained", len(corpus), "samples with order", order, "and hit rate", hitRate)
-
-	marshalled, err := json.Marshal(model)
-	if err != nil {
-		panic(err.Error())
-	}
-	fmt.Print(string(marshalled))
 }

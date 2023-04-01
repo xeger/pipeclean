@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime"
 
 	"github.com/spf13/cobra"
@@ -28,20 +27,8 @@ func init() {
 	scrubCmd.PersistentFlags().IntVar(&parallelism, "parallelism", runtime.NumCPU(), "lines to scrub at once")
 }
 
-func expandModels(models []nlp.Model) map[nlp.Model]nlp.Generator {
+func loadModels(paths []string) (map[nlp.Model]nlp.Generator, error) {
 	result := make(map[nlp.Model]nlp.Generator)
-	for _, m := range models {
-		if _, ok := m.(nlp.Generator); ok {
-			result[m] = m.(nlp.Generator)
-		} else if m, ok := m.(*nlp.DictModel); ok {
-			result[m] = nil
-		}
-	}
-	return result
-}
-
-func loadModels(paths []string) ([]nlp.Model, error) {
-	models := make([]nlp.Model, 0, 10)
 
 	for _, path := range paths {
 		fi, err := os.Stat(path)
@@ -49,36 +36,34 @@ func loadModels(paths []string) ([]nlp.Model, error) {
 			panic(err.Error())
 		}
 		if fi.IsDir() {
-			dir, err := os.ReadDir(path)
+			dirResult, err := nlp.LoadModels(path)
 			if err != nil {
-				panic(err.Error())
+				return nil, err
 			}
-			for _, dirent := range dir {
-				m, err := nlp.LoadModel(filepath.Join(path, dirent.Name()))
-				if err != nil {
-					panic(err.Error())
-				}
-				models = append(models, m)
+			for k, v := range dirResult {
+				result[k] = v
 			}
 		} else {
-			m, err := nlp.LoadModel(path)
+			model, err := nlp.LoadModel(path)
 			if err != nil {
-				panic(err.Error())
+				return nil, err
 			}
-			models = append(models, m)
+			if g, ok := model.(nlp.Generator); ok {
+				result[model] = g
+			} else {
+				result[model] = nil
+			}
 		}
 	}
 
-	return models, nil
+	return result, nil
 }
 
 func scrub(cmd *cobra.Command, args []string) {
-	inputModels, err := loadModels(args)
+	models, err := loadModels(args)
 	if err != nil {
 		panic(err.Error())
 	}
-
-	models := expandModels(inputModels)
 
 	N := parallelism
 

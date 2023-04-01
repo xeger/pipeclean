@@ -9,7 +9,7 @@ type DictModel struct {
 	Dict map[string]bool
 }
 
-func NewDictModel(order int, separator string) *DictModel {
+func NewDictModel() *DictModel {
 	return &DictModel{
 		Dict: make(map[string]bool),
 	}

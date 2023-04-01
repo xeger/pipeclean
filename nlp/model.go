@@ -47,3 +47,64 @@ func LoadModel(filename string) (Model, error) {
 	}
 
 }
+
+func LoadModels(dirname string) (map[Model]Generator, error) {
+	result := make(map[Model]Generator)
+
+	dir, err := os.ReadDir(dirname)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	byPrefix := make(map[string][]string)
+
+	for _, dirent := range dir {
+		if dirent.IsDir() {
+			continue
+		}
+		name := dirent.Name()
+		ext := filepath.Ext(name)
+		prefix := strings.TrimSuffix(name, ext)
+		byPrefix[prefix] = append(byPrefix[prefix], name)
+	}
+
+	for _, names := range byPrefix {
+		switch len(names) {
+		case 1: // lonesome JSON or txt file
+			m, err := LoadModel(filepath.Join(dirname, names[0]))
+			if err != nil {
+				return nil, err
+			}
+			if _, ok := m.(Generator); ok {
+				result[m] = m.(Generator)
+			} else {
+				result[m] = nil
+			}
+		case 2: // paired JSON and text files
+			var jsonFile, textFile string
+			for _, name := range names {
+				if filepath.Ext(name) == ".json" {
+					jsonFile = name
+				} else if filepath.Ext(name) == ".txt" {
+					textFile = name
+				}
+			}
+			if jsonFile == "" || textFile == "" {
+				return nil, fmt.Errorf(`nlp.LoadModels: expected exactly one .txt and one .json file among '%s' and %s`, names[0], names[1])
+			}
+			m, err := LoadModel(textFile)
+			if err != nil {
+				return nil, err
+			}
+			g, err := LoadModel(jsonFile)
+			if err != nil {
+				return nil, err
+			} else if g, ok := g.(Generator); ok {
+				result[m] = g
+			} else {
+				return nil, fmt.Errorf(`nlp.LoadModels: no Generator among '%s' and %s`, names[0], names[1])
+			}
+		}
+	}
+	return result, nil
+}

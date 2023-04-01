@@ -1,5 +1,5 @@
 default:
-	cat input.sql | ./sqlstream scrub
+	cat testdata/sql/input.sql | ./sqlstream scrub testdata/en-US
 
 bin: $(find . -type f -name '*.go')
 	mkdir -p bin
@@ -8,17 +8,17 @@ bin: $(find . -type f -name '*.go')
 	touch bin
 
 benchmark:
-	time cat benchmark.sql | ./sqlstream scrub > /dev/null
+	time cat testdata/sql/benchmark.sql | ./sqlstream scrub testdata/en-US > /dev/null
 
 clean:
 	rm -Rf bin
+	rm testdata/*/*.json
+	rm testdata/*/*.txt
 
-city: city.markov.json
-	./sqlstream generate city.markov.json
+testdata: testdata/en-US/city.json
 
-# TODO: turn the hit-rate check into a command (or do reinforcement learning?)
-city.markov.json: city.csv
-	cat city.csv | ./sqlstream train words 5 > city.markov.json
-	@ALL=$$(cat city.csv | wc -l); \
-HITS=$$(cat city.csv | ./sqlstream recognize --confidence=0.5 city.markov.json | wc -l); \
-echo "Hit rate: $${HITS}/$${ALL}"
+testdata/en-US/city.txt: testdata/en-US/city.csv
+	tail -n+2 testdata/en-US/city.csv | ./sqlstream train dict > testdata/en-US/city.txt
+
+testdata/en-US/city.json: testdata/en-US/city.txt
+	cat testdata/en-US/city.csv | ./sqlstream train markov:words:5 > testdata/en-US/city.json
