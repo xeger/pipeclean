@@ -34,10 +34,10 @@ var reZip = regexp.MustCompile(`\d{5}(-\d{4})?`)
 
 type scrubber struct {
 	source *prng.MT19937
-	models []*nlp.Model
+	models map[nlp.Model]nlp.Generator
 }
 
-func NewScrubber(models []*nlp.Model) *scrubber {
+func NewScrubber(models map[nlp.Model]nlp.Generator) *scrubber {
 	return &scrubber{
 		models: models,
 		source: prng.NewMT19937(),
@@ -115,11 +115,13 @@ func (sc *scrubber) scrubString(s string) string {
 		return "{}"
 	}
 
-	for _, model := range sc.models {
-		// TODO: normalize spacing of s; apply only word or sentence models depending on number of spaces
+	for model, generator := range sc.models {
 		if model.Recognize(s) > 0.8 {
-			// TODO -- determinism
-			return model.Generate()
+			if generator != nil {
+				return generator.Generate(s)
+			} else {
+				return sc.mask(s)
+			}
 		}
 	}
 

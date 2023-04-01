@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/xeger/sqlstream/nlp"
@@ -47,17 +46,28 @@ func train(cmd *cobra.Command, args []string) {
 	}
 
 	reader := bufio.NewReader(os.Stdin)
-	model := nlp.NewModel(order, sep)
+	model := nlp.NewMarkovModel(order, sep)
+	corpus := make([]string, 0, 65535)
 
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			break
 		}
-		model.Train(strings.TrimRight(line, "\r\n\t"))
+		corpus = append(corpus, nlp.Clean(line))
+		model.Train(line)
 	}
 
-	marshalled, err := json.MarshalIndent(model, "", "  ")
+	miss := 0
+	for _, sample := range corpus {
+		if c := model.Recognize(sample); c < 0.95 {
+			miss++
+		}
+	}
+	hitRate := 1.0 - float64(miss)/float64(len(corpus))
+	fmt.Fprintln(os.Stderr, "Trained", len(corpus), "samples with order", order, "and hit rate", hitRate)
+
+	marshalled, err := json.Marshal(model)
 	if err != nil {
 		panic(err.Error())
 	}

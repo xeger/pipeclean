@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -28,17 +27,17 @@ func generate(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	var model *nlp.Model = nil
-	data, err := os.ReadFile(modelFile)
-	if err != nil {
-		panic(err.Error())
-	}
-	err = json.Unmarshal(data, &model)
+	model, err := nlp.LoadModel(modelFile)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	for i := 0; i < 10; i++ {
-		fmt.Println(model.Generate())
+	if g, ok := model.(nlp.Generator); ok {
+		for i := 0; i < 10; i++ {
+			fmt.Println(g.Generate(""))
+		}
+	} else {
+		fmt.Fprintln(os.Stderr, "Model does not support generation.")
+		os.Exit(1)
 	}
 }

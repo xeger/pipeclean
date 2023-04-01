@@ -28,8 +28,20 @@ func init() {
 	scrubCmd.PersistentFlags().IntVar(&parallelism, "parallelism", runtime.NumCPU(), "lines to scrub at once")
 }
 
-func loadModels(paths []string) ([]*nlp.Model, error) {
-	models := make([]*nlp.Model, 0, 10)
+func expandModels(models []nlp.Model) map[nlp.Model]nlp.Generator {
+	result := make(map[nlp.Model]nlp.Generator)
+	for _, m := range models {
+		if _, ok := m.(nlp.Generator); ok {
+			result[m] = m.(nlp.Generator)
+		} else if m, ok := m.(*nlp.DictModel); ok {
+			result[m] = nil
+		}
+	}
+	return result
+}
+
+func loadModels(paths []string) ([]nlp.Model, error) {
+	models := make([]nlp.Model, 0, 10)
 
 	for _, path := range paths {
 		fi, err := os.Stat(path)
@@ -61,7 +73,9 @@ func loadModels(paths []string) ([]*nlp.Model, error) {
 }
 
 func scrub(cmd *cobra.Command, args []string) {
-	models, err := loadModels(args)
+	inputModels, err := loadModels(args)
+	models := expandModels(inputModels)
+
 	if err != nil {
 		panic(err.Error())
 	}

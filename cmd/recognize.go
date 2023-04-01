@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -37,12 +36,7 @@ func recognize(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	var model *nlp.Model = nil
-	data, err := os.ReadFile(modelFile)
-	if err != nil {
-		panic(err.Error())
-	}
-	err = json.Unmarshal(data, &model)
+	model, err := nlp.LoadModel(modelFile)
 	if err != nil {
 		panic(err.Error())
 	}

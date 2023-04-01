@@ -14,7 +14,7 @@ import (
 //
 // Because of the 1:1 mapping between sends and receives, this function can be used with
 // buffered channels provided the caller takes care to preserve ordering.
-func Scrub(models []*nlp.Model, in <-chan string, out chan<- string) {
+func Scrub(models map[nlp.Model]nlp.Generator, in <-chan string, out chan<- string) {
 	p := parser.New()
 	sc := NewScrubber(models)
 	for line := range in {
