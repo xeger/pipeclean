@@ -65,6 +65,9 @@ func (m *MarkovModel) Generate(seed string) string {
 }
 
 func (m *MarkovModel) Recognize(input string) float64 {
+	if len(input) < m.chain.Order {
+		return 0.0
+	}
 	input = Clean(input)
 	tokens := strings.Split(input, m.separator)
 	logProb := float64(0)

@@ -6,18 +6,18 @@ import (
 )
 
 type DictModel struct {
-	Dict map[string]bool
+	dict map[string]bool
 }
 
 func NewDictModel() *DictModel {
 	return &DictModel{
-		Dict: make(map[string]bool),
+		dict: make(map[string]bool),
 	}
 }
 
 func (m *DictModel) MarshalText() ([]byte, error) {
 	buf := new(bytes.Buffer)
-	for k := range m.Dict {
+	for k := range m.dict {
 		buf.WriteString(k)
 		buf.WriteRune('\n')
 	}
@@ -25,11 +25,11 @@ func (m *DictModel) MarshalText() ([]byte, error) {
 }
 
 func (m *DictModel) UnmarshalText(b []byte) error {
-	m.Dict = make(map[string]bool)
+	m.dict = make(map[string]bool)
 	scanner := bufio.NewScanner(bytes.NewBuffer(b))
 
 	for scanner.Scan() {
-		m.Dict[Clean(scanner.Text())] = true
+		m.dict[Clean(scanner.Text())] = true
 	}
 
 	return nil
@@ -37,7 +37,7 @@ func (m *DictModel) UnmarshalText(b []byte) error {
 
 func (m *DictModel) Recognize(input string) float64 {
 	input = Clean(input)
-	if _, ok := m.Dict[input]; ok {
+	if _, ok := m.dict[input]; ok {
 		return 1.0
 	} else {
 		return 0.0
@@ -46,5 +46,5 @@ func (m *DictModel) Recognize(input string) float64 {
 
 func (m *DictModel) Train(input string) {
 	input = Clean(input)
-	m.Dict[input] = true
+	m.dict[input] = true
 }

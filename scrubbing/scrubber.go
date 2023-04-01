@@ -33,14 +33,16 @@ var reTelUS = regexp.MustCompile(`\(?\d{3}\)?[ -]?\d{3}-?\d{4}`)
 var reZip = regexp.MustCompile(`\d{5}(-\d{4})?`)
 
 type scrubber struct {
-	source *prng.MT19937
-	models map[nlp.Model]nlp.Generator
+	source     *prng.MT19937
+	models     []nlp.Model
+	confidence float64
 }
 
-func NewScrubber(models map[nlp.Model]nlp.Generator) *scrubber {
+func NewScrubber(models []nlp.Model, confidence float64) *scrubber {
 	return &scrubber{
-		models: models,
-		source: prng.NewMT19937(),
+		models:     models,
+		source:     prng.NewMT19937(),
+		confidence: confidence,
 	}
 }
 
@@ -115,9 +117,9 @@ func (sc *scrubber) scrubString(s string) string {
 		return "{}"
 	}
 
-	for model, generator := range sc.models {
-		if model.Recognize(s) > 0.8 {
-			if generator != nil {
+	for _, model := range sc.models {
+		if model.Recognize(s) >= sc.confidence {
+			if generator, ok := model.(nlp.Generator); ok {
 				return generator.Generate(s)
 			} else {
 				return sc.mask(s)

@@ -48,16 +48,15 @@ func LoadModel(filename string) (Model, error) {
 
 }
 
-func LoadModels(dirname string) (map[Model]Generator, error) {
-	result := make(map[Model]Generator)
-
+func LoadModels(dirname string) ([]Model, error) {
 	dir, err := os.ReadDir(dirname)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	byPrefix := make(map[string][]string)
+	result := make([]Model, 0, len(dir))
 
+	byPrefix := make(map[string][]string)
 	for _, dirent := range dir {
 		if dirent.IsDir() {
 			continue
@@ -69,7 +68,7 @@ func LoadModels(dirname string) (map[Model]Generator, error) {
 	}
 
 	for prefix, names := range byPrefix {
-		models := make([]Model, 0, len(names))
+		underlying := make([]Model, 0, len(names))
 		if len(names) > 2 {
 			return nil, fmt.Errorf("nlp.LoadModels: Too many models for prefix %q", prefix)
 		}
@@ -79,24 +78,17 @@ func LoadModels(dirname string) (map[Model]Generator, error) {
 			if err != nil {
 				return nil, err
 			}
-			models = append(models, m)
+			underlying = append(underlying, m)
 		}
 
-		var model Model
-		var generator Generator
-		if len(models) > 0 {
-			model = models[0]
-		}
-		for _, m := range models {
-			if g, ok := m.(Generator); ok {
-				generator = g
-			} else {
-				model = m
+		if len(underlying) == 1 {
+			result = append(result, underlying...)
+		} else {
+			compound, err := NewCompoundModel(underlying)
+			if err != nil {
+				return nil, err
 			}
-		}
-
-		if model != nil {
-			result[model] = generator
+			result = append(result, compound)
 		}
 	}
 
