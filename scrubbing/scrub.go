@@ -14,9 +14,9 @@ import (
 //
 // Because of the 1:1 mapping between sends and receives, this function can be used with
 // buffered channels provided the caller takes care to preserve ordering.
-func Scrub(models []nlp.Model, confidence float64, in <-chan string, out chan<- string) {
+func Scrub(salt string, models []nlp.Model, confidence float64, in <-chan string, out chan<- string) {
 	p := parser.New()
-	sc := NewScrubber(models, confidence)
+	sc := NewScrubber(salt, models, confidence)
 	for line := range in {
 		buf := bytes.NewBufferString("")
 
@@ -26,7 +26,7 @@ func Scrub(models []nlp.Model, confidence float64, in <-chan string, out chan<- 
 		}
 
 		for _, in := range stmts {
-			out, processed := sc.Scrub(in)
+			out, processed := sc.ScrubSQL(in)
 			if !processed {
 				fmt.Fprintln(buf, out.OriginalText())
 			} else if out != nil {

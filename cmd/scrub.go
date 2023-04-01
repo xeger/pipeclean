@@ -13,7 +13,8 @@ import (
 
 // Used for flags.
 var (
-	parallelism int = runtime.NumCPU()
+	parallelism int    = runtime.NumCPU()
+	salt        string = ""
 
 	scrubCmd = &cobra.Command{
 		Use:   "scrub",
@@ -25,6 +26,7 @@ var (
 
 func init() {
 	scrubCmd.PersistentFlags().IntVar(&parallelism, "parallelism", runtime.NumCPU(), "lines to scrub at once")
+	scrubCmd.PersistentFlags().StringVar(&salt, "salt", "", "static diversifier for text-masking PRNG")
 }
 
 func loadModels(paths []string) ([]nlp.Model, error) {
@@ -66,7 +68,7 @@ func scrub(cmd *cobra.Command, args []string) {
 	for i := 0; i < N; i++ {
 		in[i] = make(chan string)
 		out[i] = make(chan string)
-		go scrubbing.Scrub(models, 0.95, in[i], out[i])
+		go scrubbing.Scrub(salt, models, 0.95, in[i], out[i])
 	}
 	drain := func(to int) {
 		for i := 0; i < to; i++ {

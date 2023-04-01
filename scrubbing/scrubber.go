@@ -33,13 +33,15 @@ var reTelUS = regexp.MustCompile(`^\(?\d{3}\)?[ -]?\d{3}-?\d{4}$`)
 var reZip = regexp.MustCompile(`^\d{5}(-\d{4})?$`)
 
 type scrubber struct {
+	salt       string
 	source     *prng.MT19937
 	models     []nlp.Model
 	confidence float64
 }
 
-func NewScrubber(models []nlp.Model, confidence float64) *scrubber {
+func NewScrubber(salt string, models []nlp.Model, confidence float64) *scrubber {
 	return &scrubber{
+		salt:       salt,
 		models:     models,
 		source:     prng.NewMT19937(),
 		confidence: confidence,
@@ -52,7 +54,7 @@ func (sc *scrubber) Enter(in ast.Node) (ast.Node, bool) {
 		switch st.Kind() {
 		case test_driver.KindString:
 			scrubbed := test_driver.Datum{}
-			scrubbed.SetString(sc.scrubString(st.Datum.GetString()))
+			scrubbed.SetString(sc.ScrubString(st.Datum.GetString()))
 			return &test_driver.ValueExpr{Datum: scrubbed}, true
 		}
 	}
@@ -66,7 +68,7 @@ func (sc *scrubber) Leave(in ast.Node) (ast.Node, bool) {
 // Removes sensitive data from an SQL statement AST.
 // May modify the AST in-place (and return it), or may return a derived AST.
 // Returns nil if the entire statement should be dropped.
-func (sc *scrubber) Scrub(stmt ast.StmtNode) (ast.StmtNode, bool) {
+func (sc *scrubber) ScrubSQL(stmt ast.StmtNode) (ast.StmtNode, bool) {
 	switch st := stmt.(type) {
 	// for table name: st.Table.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName).Name
 	// for raw values: st.Lists[0][0], etc...
@@ -86,7 +88,7 @@ func (sc *scrubber) Scrub(stmt ast.StmtNode) (ast.StmtNode, bool) {
 }
 
 // Scrubs recognized well-formed PII from a string, preserving all other values.
-func (sc *scrubber) scrubString(s string) string {
+func (sc *scrubber) ScrubString(s string) string {
 	// Mask email addresses w/ consistent local and domain parts.
 	if len(s) < 1024 && strings.Index(s, " ") == -1 {
 		if a, _ := mail.ParseAddress(s); a != nil {
@@ -121,14 +123,15 @@ func (sc *scrubber) scrubString(s string) string {
 
 	// Mask each part of short phrases of 2-4 words (i.e. addresses and names).
 	spaces := strings.Count(s, " ")
-	if spaces > 1 && spaces < 4 {
+	if spaces > 0 && spaces < 4 {
 		words := strings.Fields(s)
 		for i, w := range words {
-			words[i] = sc.scrubString(w)
+			words[i] = sc.ScrubString(w)
 		}
 		return strings.Join(words, " ")
 	}
 
+	// Match against all models.
 	for _, model := range sc.models {
 		if model.Recognize(s) >= sc.confidence {
 			if generator, ok := model.(nlp.Generator); ok {
@@ -147,16 +150,20 @@ func (sc *scrubber) scrubString(s string) string {
 // Always returns the same output for a given input.
 func (sc *scrubber) mask(s string) string {
 	h := fnv.New64a()
+	if sc.salt != "" {
+		h.Write([]byte(sc.salt))
+		h.Write([]byte{0})
+	}
 	h.Write([]byte(s))
 	sc.source.Seed(h.Sum64())
 
 	sb := []byte(s)
 	for i, b := range sb {
-		if b > 'a' && b < 'z' {
+		if b >= 'a' && b <= 'z' {
 			sb[i] = 'a' + byte(sc.source.Uint32()%26)
-		} else if b > 'A' && b < 'Z' {
+		} else if b >= 'A' && b <= 'Z' {
 			sb[i] = 'A' + byte(sc.source.Uint32()%26)
-		} else if b > '1' && b < '9' {
+		} else if b >= '1' && b <= '9' {
 			sb[i] = '1' + byte(sc.source.Uint32()%9)
 		}
 	}
