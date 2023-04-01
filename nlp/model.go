@@ -26,7 +26,7 @@ func LoadModel(filename string) (Model, error) {
 
 	switch ext {
 	case ".json":
-		if strings.Index(header, `"typ": ""`) >= 0 {
+		if strings.Index(header, markovModelTypeID) >= 0 {
 			m := MarkovModel{}
 
 			if err = m.UnmarshalJSON(d); err != nil {
@@ -34,7 +34,7 @@ func LoadModel(filename string) (Model, error) {
 			}
 			return &m, nil
 		} else {
-			return nil, fmt.Errorf(`nlp.LoadModel: Malformed model JSON (unknown "typ") in "%s"`, name)
+			return nil, fmt.Errorf("nlp.LoadModel: Malformed model JSON (unknown type) in %q", name)
 		}
 	case ".txt":
 		m := DictModel{}
@@ -43,7 +43,7 @@ func LoadModel(filename string) (Model, error) {
 		}
 		return &m, nil
 	default:
-		return nil, fmt.Errorf(`nlp.LoadModel: Malformed model (unknown extension) of "%s"`, name)
+		return nil, fmt.Errorf(`nlp.LoadModel: Malformed model (unknown extension) of %q`, name)
 	}
 
 }
@@ -68,43 +68,37 @@ func LoadModels(dirname string) (map[Model]Generator, error) {
 		byPrefix[prefix] = append(byPrefix[prefix], name)
 	}
 
-	for _, names := range byPrefix {
-		switch len(names) {
-		case 1: // lonesome JSON or txt file
-			m, err := LoadModel(filepath.Join(dirname, names[0]))
+	for prefix, names := range byPrefix {
+		models := make([]Model, 0, len(names))
+		if len(names) > 2 {
+			return nil, fmt.Errorf("nlp.LoadModels: Too many models for prefix %q", prefix)
+		}
+
+		for _, name := range names {
+			m, err := LoadModel(filepath.Join(dirname, name))
 			if err != nil {
 				return nil, err
 			}
-			if _, ok := m.(Generator); ok {
-				result[m] = m.(Generator)
+			models = append(models, m)
+		}
+
+		var model Model
+		var generator Generator
+		if len(models) > 0 {
+			model = models[0]
+		}
+		for _, m := range models {
+			if g, ok := m.(Generator); ok {
+				generator = g
 			} else {
-				result[m] = nil
-			}
-		case 2: // paired JSON and text files
-			var jsonFile, textFile string
-			for _, name := range names {
-				if filepath.Ext(name) == ".json" {
-					jsonFile = name
-				} else if filepath.Ext(name) == ".txt" {
-					textFile = name
-				}
-			}
-			if jsonFile == "" || textFile == "" {
-				return nil, fmt.Errorf(`nlp.LoadModels: expected exactly one .txt and one .json file among '%s' and %s`, names[0], names[1])
-			}
-			m, err := LoadModel(textFile)
-			if err != nil {
-				return nil, err
-			}
-			g, err := LoadModel(jsonFile)
-			if err != nil {
-				return nil, err
-			} else if g, ok := g.(Generator); ok {
-				result[m] = g
-			} else {
-				return nil, fmt.Errorf(`nlp.LoadModels: no Generator among '%s' and %s`, names[0], names[1])
+				model = m
 			}
 		}
+
+		if model != nil {
+			result[model] = generator
+		}
 	}
+
 	return result, nil
 }

@@ -41,7 +41,7 @@ func (m *MarkovModel) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	if obj.Type != markovModelTypeID {
-		return fmt.Errorf("Wrong type; expected '%s', got '%s'", markovModelTypeID, obj.Type)
+		return fmt.Errorf("Wrong type; expected %q, got %q", markovModelTypeID, obj.Type)
 	}
 
 	m.chain = obj.Chain

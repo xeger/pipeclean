@@ -25,12 +25,11 @@ func (m *DictModel) MarshalText() ([]byte, error) {
 }
 
 func (m *DictModel) UnmarshalText(b []byte) error {
-	buf := new(bytes.Buffer)
-	scanner := bufio.NewScanner(buf)
-	scanner.Split(bufio.ScanLines)
+	m.Dict = make(map[string]bool)
+	scanner := bufio.NewScanner(bytes.NewBuffer(b))
 
 	for scanner.Scan() {
-		m.Dict[scanner.Text()] = true
+		m.Dict[Clean(scanner.Text())] = true
 	}
 
 	return nil

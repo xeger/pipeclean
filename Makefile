@@ -1,5 +1,5 @@
 default:
-	cat testdata/sql/input.sql | ./sqlstream scrub testdata/en-US
+	cat testdata/sql/input.sql | ./sqlstream scrub testdata/en-US/models
 
 bin: $(find . -type f -name '*.go')
 	mkdir -p bin
@@ -8,17 +8,16 @@ bin: $(find . -type f -name '*.go')
 	touch bin
 
 benchmark:
-	time cat testdata/sql/benchmark.sql | ./sqlstream scrub testdata/en-US > /dev/null
+	time cat testdata/sql/benchmark.sql | ./sqlstream scrub testdata/en-US/models > /dev/null
 
 clean:
 	rm -Rf bin
-	rm testdata/*/*.json
-	rm testdata/*/*.txt
+	rm testdata/*/models/*
 
-testdata: testdata/en-US/city.json
+testdata: testdata/en-US/models/city.json
 
-testdata/en-US/city.txt: testdata/en-US/city.csv
-	tail -n+2 testdata/en-US/city.csv | ./sqlstream train dict > testdata/en-US/city.txt
+testdata/en-US/models/city.txt: testdata/en-US/training/city.csv
+	tail -n+2 testdata/en-US/training/city.csv | ./sqlstream train dict > testdata/en-US/models/city.txt
 
-testdata/en-US/city.json: testdata/en-US/city.txt
-	cat testdata/en-US/city.csv | ./sqlstream train markov:words:5 > testdata/en-US/city.json
+testdata/en-US/models/city.json: testdata/en-US/models/city.txt
+	cat testdata/en-US/models/city.txt | ./sqlstream train markov:words:5 > testdata/en-US/models/city.json
