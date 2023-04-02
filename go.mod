@@ -3,23 +3,23 @@ module github.com/xeger/sqlstream
 go 1.17
 
 require (
-	github.com/mb-14/gomarkov v0.0.0-20210216094942-a5b484cc0243
-	github.com/pingcap/tidb/parser v0.0.0-20230217143104-f4ca0821fb96
-	gonum.org/v1/gonum v0.12.0
+	github.com/pingcap/tidb/parser v0.0.0-20230402100455-fc0751d0f9bc
+	github.com/spf13/cobra v1.6.1
 )
 
 require (
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
-	github.com/inconshreveable/mousetrap v1.0.1 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/pingcap/errors v0.11.5-0.20210425183316-da1aaba5fb63 // indirect
-	github.com/pingcap/log v0.0.0-20210625125904-98ed8e2eb1c7 // indirect
-	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
-	github.com/spf13/cobra v1.6.1 // indirect
+	github.com/pingcap/log v1.1.0 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.uber.org/atomic v1.7.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.18.1 // indirect
-	golang.org/x/exp v0.0.0-20220428152302-39d4317da171 // indirect
-	golang.org/x/text v0.3.8 // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
+	github.com/xeger/gomarkov v0.0.0-20230402225313-f7b07c1f4d0e // indirect
+	go.uber.org/atomic v1.10.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.24.0 // indirect
+	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
+	golang.org/x/text v0.8.0 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )

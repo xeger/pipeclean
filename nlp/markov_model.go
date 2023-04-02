@@ -6,7 +6,8 @@ import (
 	"math"
 	"strings"
 
-	"github.com/mb-14/gomarkov"
+	"github.com/xeger/gomarkov"
+	"github.com/xeger/sqlstream/rand"
 )
 
 type MarkovModel struct {
@@ -49,16 +50,17 @@ func (m *MarkovModel) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// TODO: respect seed (need to improve gomarkov library)
 func (m *MarkovModel) Generate(seed string) string {
-	// seed = Clean(seed)
+	seed = Clean(seed)
+	rand := rand.NewRand(seed)
+
 	order := m.chain.Order
 	state := make(gomarkov.NGram, 0)
 	for i := 0; i < order; i++ {
 		state = append(state, gomarkov.StartToken)
 	}
 	for state[len(state)-1] != gomarkov.EndToken {
-		next, _ := m.chain.Generate(state[(len(state) - order):])
+		next, _ := m.chain.GenerateDet(state[(len(state)-order):], rand)
 		state = append(state, next)
 	}
 	return strings.Join(state[order:len(state)-1], m.separator)

@@ -11,8 +11,7 @@ import (
 	"github.com/pingcap/tidb/parser/test_driver"
 	_ "github.com/pingcap/tidb/parser/test_driver"
 	"github.com/xeger/sqlstream/nlp"
-
-	"gonum.org/v1/gonum/mathext/prng"
+	"github.com/xeger/sqlstream/rand"
 )
 
 // Preserves non-parseable lines (assuming they are comments).
@@ -39,7 +38,6 @@ var reZip = regexp.MustCompile(`^\d{5}(-\d{4})?$`)
 
 type scrubber struct {
 	salt       string
-	source     *prng.MT19937
 	models     []nlp.Model
 	confidence float64
 }
@@ -48,7 +46,6 @@ func NewScrubber(salt string, models []nlp.Model, confidence float64) *scrubber 
 	return &scrubber{
 		salt:       salt,
 		models:     models,
-		source:     prng.NewMT19937(),
 		confidence: confidence,
 	}
 }
@@ -156,22 +153,22 @@ func (sc *scrubber) ScrubString(s string) string {
 // As a special case, preserves 0 (and thus the distribution of zero to nonzero).
 // Always returns the same output for a given input.
 func (sc *scrubber) mask(s string) string {
+	rand := rand.NewRand(nlp.Clean(s))
 	h := fnv.New64a()
 	if sc.salt != "" {
 		h.Write([]byte(sc.salt))
 		h.Write([]byte{0})
 	}
 	h.Write([]byte(s))
-	sc.source.Seed(h.Sum64())
 
 	sb := []byte(s)
 	for i, b := range sb {
 		if b >= 'a' && b <= 'z' {
-			sb[i] = 'a' + byte(sc.source.Uint32()%26)
+			sb[i] = 'a' + byte(rand.Uint32()%26)
 		} else if b >= 'A' && b <= 'Z' {
-			sb[i] = 'A' + byte(sc.source.Uint32()%26)
+			sb[i] = 'A' + byte(rand.Uint32()%26)
 		} else if b >= '1' && b <= '9' {
-			sb[i] = '1' + byte(sc.source.Uint32()%9)
+			sb[i] = '1' + byte(rand.Uint32()%9)
 		}
 	}
 
