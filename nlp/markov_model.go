@@ -60,7 +60,7 @@ func (m *MarkovModel) Generate(seed string) string {
 		state = append(state, gomarkov.StartToken)
 	}
 	for state[len(state)-1] != gomarkov.EndToken {
-		next, _ := m.chain.GenerateDet(state[(len(state)-order):], rand)
+		next, _ := m.chain.GenerateDeterministic(state[(len(state)-order):], rand)
 		state = append(state, next)
 	}
 	return strings.Join(state[order:len(state)-1], m.separator)

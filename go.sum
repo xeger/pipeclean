@@ -38,6 +38,8 @@ github.com/xeger/gomarkov v0.0.0-20230402215431-7f01de6e5739 h1:CNYoCY6lkhphuzLu
 github.com/xeger/gomarkov v0.0.0-20230402215431-7f01de6e5739/go.mod h1:44+EwlEfLx0DRYM3yQWq2f/lCXL0KIpcKCm6dseSEDY=
 github.com/xeger/gomarkov v0.0.0-20230402225313-f7b07c1f4d0e h1:F6UpRAyKDPeEBMhH3HPjyjRnnQrQYUhFpFHz5q+5yZs=
 github.com/xeger/gomarkov v0.0.0-20230402225313-f7b07c1f4d0e/go.mod h1:44+EwlEfLx0DRYM3yQWq2f/lCXL0KIpcKCm6dseSEDY=
+github.com/xeger/gomarkov v0.0.0-20230403155419-3bc4cf20d222 h1:OGSNJLsZ6cHQJTnFLOsJIXX4Dns3DwHIVoCdNVTPF4w=
+github.com/xeger/gomarkov v0.0.0-20230403155419-3bc4cf20d222/go.mod h1:44+EwlEfLx0DRYM3yQWq2f/lCXL0KIpcKCm6dseSEDY=
 go.uber.org/atomic v1.6.0/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/atomic v1.9.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
