@@ -31,9 +31,6 @@ var reContainsNum = regexp.MustCompile(`#?\d{1,5}`)
 // Numeric sequence (e.g. street address).
 var reNum = regexp.MustCompile(`^#?\d{1,5}$`)
 
-// Commonly-used street name suffix e.g. Ave, Blvd, Dr
-var reStreetSuffixUS = regexp.MustCompile(`^(?i)(Ave?n?u?e?|Dri?v?e?|Str?e?e?t|Wa?y)[.]?$`)
-
 var reTelUS = regexp.MustCompile(`^\(?\d{3}\)?[ -]?\d{3}-?\d{4}$`)
 
 var reZip = regexp.MustCompile(`^\d{5}(-\d{4})?$`)
@@ -135,9 +132,6 @@ func (sc *Scrubber) ScrubString(s string) string {
 	} else if reNum.MatchString(s) || reZip.MatchString(s) {
 		return sc.mask(s)
 	}
-	// } else if reStreetSuffixUS.MatchString(s) {
-	// 	return s
-	// }
 
 	// Mask each part of short phrases of 2-10 words that contain a numeric component.
 	if reContainsNum.MatchString(s) {
