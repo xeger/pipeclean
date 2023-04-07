@@ -139,10 +139,10 @@ func (sc *Scrubber) ScrubString(s string) string {
 	// 	return s
 	// }
 
-	// Mask each part of short phrases of 2-4 words that contain a numeric component.
+	// Mask each part of short phrases of 2-10 words that contain a numeric component.
 	if reContainsNum.MatchString(s) {
 		spaces := strings.Count(s, " ")
-		if spaces > 0 && spaces < 4 {
+		if spaces > 0 && spaces < 10 {
 			words := strings.Fields(s)
 			for i, w := range words {
 				words[i] = sc.ScrubString(w)
