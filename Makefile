@@ -1,5 +1,5 @@
 default:
-	cat testdata/sql/input.sql | ./sqlstream scrub testdata/en-US/models
+	cat data/sql/input.sql | ./sqlstream scrub data/models
 
 bin: $(find . -type f -name '*.go')
 	mkdir -p bin
@@ -8,22 +8,25 @@ bin: $(find . -type f -name '*.go')
 	touch bin
 
 benchmark:
-	time cat testdata/sql/benchmark.sql | ./sqlstream scrub testdata/en-US/models > /dev/null
+	time cat data/sql/benchmark.sql | ./sqlstream scrub data/models > /dev/null
 
 clean:
 	rm -Rf bin
-	rm testdata/*/models/*
+	rm data/models/*
 
-testdata: testdata/en-US/models/city.json testdata/en-US/models/givenName.json testdata/en-US/models/streetName.json
+data: data/models/city.json data/models/givenName.json data/models/sn.json data/models/streetName.json
 
-testdata/en-US/models/city.txt: testdata/en-US/training/city.csv
-	tail -n+2 testdata/en-US/training/city.csv | ./sqlstream train dict > testdata/en-US/models/city.txt
+data/models/city.txt: data/training/city.csv
+	tail -n+2 data/training/city.csv | ./sqlstream train dict > data/models/city.txt
 
-testdata/en-US/models/city.json: Makefile testdata/en-US/models/city.txt
-	cat testdata/en-US/models/city.txt | ./sqlstream train markov:words:5 > testdata/en-US/models/city.json
+data/models/city.json: Makefile data/models/city.txt
+	cat data/models/city.txt | ./sqlstream train markov:words:5 > data/models/city.json
 
-testdata/en-US/models/givenName.json: Makefile testdata/en-US/training/givenName.csv
-	tail -n+2 testdata/en-US/training/givenName.csv | ./sqlstream train markov:words:5 > testdata/en-US/models/givenName.json
+data/models/givenName.json: Makefile data/training/givenName.csv
+	tail -n+2 data/training/givenName.csv | ./sqlstream train markov:words:3 > data/models/givenName.json
 
-testdata/en-US/models/streetName.json: Makefile testdata/en-US/training/streetName.csv
-	tail -n+2 testdata/en-US/training/streetName.csv | ./sqlstream train markov:words:5 > testdata/en-US/models/streetName.json
+data/models/sn.json: Makefile data/training/sn.csv
+	tail -n+2 data/training/sn.csv | ./sqlstream train markov:words:3 > data/models/sn.json
+
+data/models/streetName.json: Makefile data/training/streetName.csv
+	tail -n+2 data/training/streetName.csv | ./sqlstream train markov:words:5 > data/models/streetName.json

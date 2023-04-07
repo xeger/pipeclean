@@ -58,10 +58,10 @@ func LoadModels(dirname string) ([]Model, error) {
 
 	byPrefix := make(map[string][]string)
 	for _, dirent := range dir {
-		if dirent.IsDir() {
+		name := dirent.Name()
+		if name[0] == '.' || dirent.IsDir() {
 			continue
 		}
-		name := dirent.Name()
 		ext := filepath.Ext(name)
 		prefix := strings.TrimSuffix(name, ext)
 		byPrefix[prefix] = append(byPrefix[prefix], name)
