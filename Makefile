@@ -8,7 +8,7 @@ bin: $(find . -type f -name '*.go')
 	touch bin
 
 benchmark:
-	time cat data/sql/benchmark.sql | ./sqlstream scrub data/models > /dev/null
+	time cat data/sql/benchmark.sql | ./sqlstream scrub data/models > data/sql/benchmark-output.sql
 
 clean:
 	rm -Rf bin

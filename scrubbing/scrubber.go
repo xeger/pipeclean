@@ -107,10 +107,13 @@ func (sc *Scrubber) ScrubString(s string) string {
 			at := strings.Index(a.Address, "@")
 			local, domain := a.Address[:at], a.Address[at+1:]
 			dot := strings.LastIndex(domain, ".")
-			tld := domain[dot+1:]
-			prefix := domain[0:dot]
-
-			return fmt.Sprintf("%s@%s.%s", sc.mask(local), sc.mask(prefix), tld)
+			if dot > 0 {
+				tld := domain[dot+1:]
+				prefix := domain[0:dot]
+				return fmt.Sprintf("%s@%s.%s", sc.mask(local), sc.mask(prefix), tld)
+			} else {
+				return sc.mask(domain)
+			}
 		}
 	}
 
