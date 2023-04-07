@@ -32,7 +32,7 @@ func recognize(cmd *cobra.Command, args []string) {
 	if len(args) == 1 {
 		modelFile = args[0]
 	} else {
-		fmt.Fprintln(os.Stderr, "Usage: sqlstream train <sentences|words>")
+		fmt.Fprintln(os.Stderr, "Usage: sqlstream recognize <modelFile>")
 		os.Exit(1)
 	}
 

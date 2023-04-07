@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -23,7 +24,7 @@ func generate(cmd *cobra.Command, args []string) {
 	if len(args) == 1 {
 		modelFile = args[0]
 	} else {
-		fmt.Fprintln(os.Stderr, "Usage: sqlstream train <sentences|words>")
+		fmt.Fprintln(os.Stderr, "Usage: sqlstream generate <modelFile>")
 		os.Exit(1)
 	}
 
@@ -34,7 +35,7 @@ func generate(cmd *cobra.Command, args []string) {
 
 	if g, ok := model.(nlp.Generator); ok {
 		for i := 0; i < 10; i++ {
-			fmt.Println(g.Generate(""))
+			fmt.Println(g.Generate(fmt.Sprintf("%d", rand.Int63())))
 		}
 	} else {
 		fmt.Fprintln(os.Stderr, "Model does not support generation.")

@@ -14,13 +14,16 @@ clean:
 	rm -Rf bin
 	rm testdata/*/models/*
 
-testdata: testdata/en-US/models/city.json testdata/en-US/models/streetName.json
+testdata: testdata/en-US/models/city.json testdata/en-US/models/givenName.json testdata/en-US/models/streetName.json
 
 testdata/en-US/models/city.txt: testdata/en-US/training/city.csv
 	tail -n+2 testdata/en-US/training/city.csv | ./sqlstream train dict > testdata/en-US/models/city.txt
 
-testdata/en-US/models/city.json: testdata/en-US/models/city.txt
+testdata/en-US/models/city.json: Makefile testdata/en-US/models/city.txt
 	cat testdata/en-US/models/city.txt | ./sqlstream train markov:words:5 > testdata/en-US/models/city.json
 
-testdata/en-US/models/streetName.json: testdata/en-US/training/streetName.csv
+testdata/en-US/models/givenName.json: Makefile testdata/en-US/training/givenName.csv
+	tail -n+2 testdata/en-US/training/givenName.csv | ./sqlstream train markov:words:5 > testdata/en-US/models/givenName.json
+
+testdata/en-US/models/streetName.json: Makefile testdata/en-US/training/streetName.csv
 	tail -n+2 testdata/en-US/training/streetName.csv | ./sqlstream train markov:words:5 > testdata/en-US/models/streetName.json
