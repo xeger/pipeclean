@@ -23,11 +23,13 @@ const doInserts = true
 // Preserves non-insert lines (LOCK/UNLOCK/SET/...).
 const doMisc = false
 
-// Numeric sequence (e.g. street address).
-var reNum = regexp.MustCompile(`^#?\d{1,5}$`)
+var reBase64 = regexp.MustCompile(`^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$`)
 
 // Numeric sequence (e.g. street address) that may be part of a larger phrase.
 var reContainsNum = regexp.MustCompile(`#?\d{1,5}`)
+
+// Numeric sequence (e.g. street address).
+var reNum = regexp.MustCompile(`^#?\d{1,5}$`)
 
 // Commonly-used street name suffix e.g. Ave, Blvd, Dr
 var reStreetSuffixUS = regexp.MustCompile(`^(?i)(Ave?n?u?e?|Dri?v?e?|Str?e?e?t|Wa?y)[.]?$`)
@@ -36,41 +38,46 @@ var reTelUS = regexp.MustCompile(`^\(?\d{3}\)?[ -]?\d{3}-?\d{4}$`)
 
 var reZip = regexp.MustCompile(`^\d{5}(-\d{4})?$`)
 
-type scrubber struct {
+type Scrubber struct {
 	salt       string
 	models     []nlp.Model
 	confidence float64
 }
 
-func NewScrubber(salt string, models []nlp.Model, confidence float64) *scrubber {
-	return &scrubber{
+func NewScrubber(salt string, models []nlp.Model, confidence float64) *Scrubber {
+	return &Scrubber{
 		salt:       salt,
 		models:     models,
 		confidence: confidence,
 	}
 }
 
-func (sc *scrubber) Enter(in ast.Node) (ast.Node, bool) {
+func (sc *Scrubber) Enter(in ast.Node) (ast.Node, bool) {
 	switch st := in.(type) {
 	case *test_driver.ValueExpr:
 		switch st.Kind() {
 		case test_driver.KindString:
-			scrubbed := test_driver.Datum{}
-			scrubbed.SetString(sc.ScrubString(st.Datum.GetString()))
-			return &test_driver.ValueExpr{Datum: scrubbed}, true
+			datum := test_driver.Datum{}
+			s := st.Datum.GetString()
+			if sc.EraseString(s) {
+				datum.SetNull()
+			} else {
+				datum.SetString(sc.ScrubString(s))
+			}
+			return &test_driver.ValueExpr{Datum: datum}, true
 		}
 	}
 	return in, false
 }
 
-func (sc *scrubber) Leave(in ast.Node) (ast.Node, bool) {
+func (sc *Scrubber) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
 // Removes sensitive data from an SQL statement AST.
 // May modify the AST in-place (and return it), or may return a derived AST.
 // Returns nil if the entire statement should be dropped.
-func (sc *scrubber) ScrubSQL(stmt ast.StmtNode) (ast.StmtNode, bool) {
+func (sc *Scrubber) ScrubSQL(stmt ast.StmtNode) (ast.StmtNode, bool) {
 	switch st := stmt.(type) {
 	// for table name: st.Table.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName).Name
 	// for raw values: st.Lists[0][0], etc...
@@ -89,16 +96,24 @@ func (sc *scrubber) ScrubSQL(stmt ast.StmtNode) (ast.StmtNode, bool) {
 	}
 }
 
+// Signals to remove a string entirely from the input stream and replace it
+// with a format-specific empty-value.
+func (sc *Scrubber) EraseString(s string) bool {
+	return reBase64.MatchString(s)
+}
+
 // Masks recognized PII in a string, preserving other values.
-func (sc *scrubber) ScrubString(s string) string {
+func (sc *Scrubber) ScrubString(s string) string {
 	// Mask email addresses w/ consistent local and domain parts.
 	if len(s) < 1024 && strings.Index(s, " ") == -1 {
 		if a, _ := mail.ParseAddress(s); a != nil {
 			at := strings.Index(a.Address, "@")
 			local, domain := a.Address[:at], a.Address[at+1:]
-			local = sc.mask(local)
-			domain = sc.mask(domain)
-			return fmt.Sprintf("%s@%s", local, domain)
+			dot := strings.LastIndex(domain, ".")
+			tld := domain[dot+1:]
+			prefix := domain[0:dot]
+
+			return fmt.Sprintf("%s@%s.%s", sc.mask(local), sc.mask(prefix), tld)
 		}
 	}
 
@@ -119,9 +134,10 @@ func (sc *scrubber) ScrubString(s string) string {
 		return fmt.Sprintf("%s-%s", area, num)
 	} else if reNum.MatchString(s) || reZip.MatchString(s) {
 		return sc.mask(s)
-	} else if reStreetSuffixUS.MatchString(s) {
-		return s
 	}
+	// } else if reStreetSuffixUS.MatchString(s) {
+	// 	return s
+	// }
 
 	// Mask each part of short phrases of 2-4 words that contain a numeric component.
 	if reContainsNum.MatchString(s) {
@@ -152,7 +168,7 @@ func (sc *scrubber) ScrubString(s string) string {
 // Scrambles letters and numbers; preserves case, punctuation, and special characters.
 // As a special case, preserves 0 (and thus the distribution of zero to nonzero).
 // Always returns the same output for a given input.
-func (sc *scrubber) mask(s string) string {
+func (sc *Scrubber) mask(s string) string {
 	rand := rand.NewRand(nlp.Clean(s))
 	h := fnv.New64a()
 	if sc.salt != "" {
