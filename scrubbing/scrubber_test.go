@@ -32,6 +32,12 @@ func assertEq(t *testing.T, a, expected string) {
 	}
 }
 
+func TestDeepJSON(t *testing.T) {
+	json1 := `{"email":"joe@foo.com"}`
+	json1s := `{"email":"jyv@iws.com"}`
+	assertEq(t, json1, json1s)
+}
+
 func TestEmail(t *testing.T) {
 	assertEq(t, "joe@foo.com", "jyv@iws.com")
 	assertEq(t, "gophers@google.com", "hruhlic@mzovvt.com")

@@ -1,6 +1,7 @@
 package scrubbing
 
 import (
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"net/mail"
@@ -24,27 +25,65 @@ var reTelUS = regexp.MustCompile(`^\(?\d{3}\)?[ -]?\d{3}-?\d{4}$`)
 var reZip = regexp.MustCompile(`^\d{5}(-\d{4})?$`)
 
 type Scrubber struct {
-	salt       string
-	models     []nlp.Model
 	confidence float64
+	models     []nlp.Model
+	salt       string
+	shallow    bool
 }
 
 func NewScrubber(salt string, models []nlp.Model, confidence float64) *Scrubber {
 	return &Scrubber{
-		salt:       salt,
-		models:     models,
 		confidence: confidence,
+		models:     models,
+		salt:       salt,
 	}
 }
 
-// Signals to remove a string entirely from the input stream and replace it
-// with a format-specific empty-value.
+// EraseString signals to remove a string entirely from the input stream and replace it
+// with a format-specific empty value.
+//
+// It returns true for base64 encoded values since they are opaque and cannot be scrubbed;
+// it's safest to remove them from the stream entirely.
 func (sc *Scrubber) EraseString(s string) bool {
 	return reBase64.MatchString(s)
 }
 
-// Masks recognized PII in a string, preserving other values.
+// ScrubData recursively scrubs maps and arrays in-place.
+func (sc *Scrubber) ScrubData(data interface{}) interface{} {
+	switch v := data.(type) {
+	case string:
+		return sc.ScrubString(v)
+	case []interface{}:
+		for i, e := range v {
+			v[i] = sc.ScrubData(e)
+		}
+		return v
+	case map[string]interface{}:
+		for k, e := range v {
+			v[k] = sc.ScrubData(e)
+		}
+		return v
+	default:
+		return v
+	}
+}
+
+// ScrubString masks recognized PII in a string, preserving other values.
 func (sc *Scrubber) ScrubString(s string) string {
+	// Mask well-known numeric formats and abbreviations.
+	if reTelUS.MatchString(s) {
+		dash := strings.Index(s, "-")
+		if dash < 0 {
+			return sc.mask(s)
+		}
+		area, num := s[:dash], s[dash+1:]
+		area = sc.mask(area)
+		num = sc.mask(num)
+		return fmt.Sprintf("%s-%s", area, num)
+	} else if reNum.MatchString(s) || reZip.MatchString(s) {
+		return sc.mask(s)
+	}
+
 	// Mask email addresses w/ consistent local and domain parts.
 	if len(s) < 1024 && strings.Index(s, " ") == -1 {
 		if a, _ := mail.ParseAddress(s); a != nil {
@@ -59,25 +98,6 @@ func (sc *Scrubber) ScrubString(s string) string {
 				return sc.mask(domain)
 			}
 		}
-	}
-
-	// Empty serialized Ruby YAML hashes.
-	if strings.Index(s, "--- !ruby/hash") == 0 {
-		return "{}"
-	}
-
-	// Mask well-known numeric formats and abbreviations.
-	if reTelUS.MatchString(s) {
-		dash := strings.Index(s, "-")
-		if dash < 0 {
-			return sc.mask(s)
-		}
-		area, num := s[:dash], s[dash+1:]
-		area = sc.mask(area)
-		num = sc.mask(num)
-		return fmt.Sprintf("%s-%s", area, num)
-	} else if reNum.MatchString(s) || reZip.MatchString(s) {
-		return sc.mask(s)
 	}
 
 	// Mask each part of short phrases of 2-10 words that contain a numeric component.
@@ -100,6 +120,23 @@ func (sc *Scrubber) ScrubString(s string) string {
 			} else {
 				return sc.mask(s)
 			}
+		}
+	}
+
+	// Handle deep scrubbing (e.g. JSON/YAML in string).
+	if !sc.shallow {
+		var data interface{}
+		if err := json.Unmarshal([]byte(s), &data); err == nil {
+			scrubbed, err := json.Marshal(sc.ScrubData(data))
+			if err != nil {
+				panic(err)
+			}
+			return string(scrubbed)
+		}
+
+		// Empty serialized Ruby YAML hashes.
+		if strings.Index(s, "--- !ruby/hash") == 0 {
+			return "{}"
 		}
 	}
 
