@@ -64,7 +64,7 @@ func scrub(cmd *cobra.Command, args []string) {
 	var scrub scrubFunc
 	switch format {
 	case "mysql":
-		scrub = mysql.Scrub
+		scrub = mysql.ScrubChan
 	default:
 		panic("unknown format: " + format)
 	}
