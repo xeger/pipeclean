@@ -10,6 +10,7 @@ import (
 
 	"github.com/xeger/sqlstream/nlp"
 	"github.com/xeger/sqlstream/rand"
+	"gopkg.in/yaml.v3"
 )
 
 var reBase64 = regexp.MustCompile(`^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$`)
@@ -112,20 +113,10 @@ func (sc *Scrubber) ScrubString(s string) string {
 		}
 	}
 
-	// Match against all models.
-	for _, model := range sc.models {
-		if model.Recognize(s) >= sc.confidence {
-			if generator, ok := model.(nlp.Generator); ok {
-				return nlp.ToSameCase(generator.Generate(s), s)
-			} else {
-				return sc.mask(s)
-			}
-		}
-	}
-
 	// Handle deep scrubbing (e.g. JSON/YAML in string).
 	if !sc.shallow {
 		var data interface{}
+
 		if err := json.Unmarshal([]byte(s), &data); err == nil {
 			scrubbed, err := json.Marshal(sc.ScrubData(data))
 			if err != nil {
@@ -134,9 +125,31 @@ func (sc *Scrubber) ScrubString(s string) string {
 			return string(scrubbed)
 		}
 
+		if err := yaml.Unmarshal([]byte(s), &data); err == nil {
+			switch v := data.(type) {
+			case []interface{}, map[string]interface{}:
+				scrubbed, err := yaml.Marshal(sc.ScrubData(v))
+				if err != nil {
+					panic(err)
+				}
+				return string(scrubbed)
+			}
+		}
+
 		// Empty serialized Ruby YAML hashes.
 		if strings.Index(s, "--- !ruby/hash") == 0 {
 			return "{}"
+		}
+	}
+
+	// Match against all models.
+	for _, model := range sc.models {
+		if model.Recognize(s) >= sc.confidence {
+			if generator, ok := model.(nlp.Generator); ok {
+				return nlp.ToSameCase(generator.Generate(s), s)
+			} else {
+				return sc.mask(s)
+			}
 		}
 	}
 

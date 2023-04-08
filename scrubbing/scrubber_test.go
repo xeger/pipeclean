@@ -38,6 +38,21 @@ func TestDeepJSON(t *testing.T) {
 	assertEq(t, json1, json1s)
 }
 
+func TestDeepYAML(t *testing.T) {
+	yaml1 := "email: joe@foo.com\n"
+	yaml1s := "email: jyv@iws.com\n"
+	assertEq(t, yaml1, yaml1s)
+
+	// BUG: YAML metadata & document structure are not preserved
+	// TODO: investigate yaml.Node & build a scrubbing/yaml package if needed
+	//  - preserves comments
+	//  - hopefully has a way to preserve type markers
+	yaml2 := `--- !ruby/hash
+email: joe@foo.com
+`
+	assertEq(t, yaml2, yaml1s)
+}
+
 func TestEmail(t *testing.T) {
 	assertEq(t, "joe@foo.com", "jyv@iws.com")
 	assertEq(t, "gophers@google.com", "hruhlic@mzovvt.com")
