@@ -9,12 +9,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/xeger/sqlstream/nlp"
 	"github.com/xeger/sqlstream/scrubbing"
+	"github.com/xeger/sqlstream/scrubbing/mysql"
 )
 
 // Used for flags.
 var (
-	parallelism int    = runtime.NumCPU()
-	salt        string = ""
+	format      string
+	parallelism int
+	salt        string
 
 	scrubCmd = &cobra.Command{
 		Use:   "scrub",
@@ -24,7 +26,10 @@ var (
 	}
 )
 
+type scrubFunc func(*scrubbing.Scrubber, <-chan string, chan<- string)
+
 func init() {
+	scrubCmd.PersistentFlags().StringVar(&format, "format", "mysql", "data type: mysql, ")
 	scrubCmd.PersistentFlags().IntVar(&parallelism, "parallelism", runtime.NumCPU(), "lines to scrub at once")
 	scrubCmd.PersistentFlags().StringVar(&salt, "salt", "", "static diversifier for text-masking PRNG")
 }
@@ -56,6 +61,14 @@ func loadModels(paths []string) ([]nlp.Model, error) {
 }
 
 func scrub(cmd *cobra.Command, args []string) {
+	var scrub scrubFunc
+	switch format {
+	case "mysql":
+		scrub = mysql.Scrub
+	default:
+		panic("unknown format: " + format)
+	}
+
 	models, err := loadModels(args)
 	if err != nil {
 		panic(err.Error())
@@ -68,7 +81,8 @@ func scrub(cmd *cobra.Command, args []string) {
 	for i := 0; i < N; i++ {
 		in[i] = make(chan string)
 		out[i] = make(chan string)
-		go scrubbing.Scrub(salt, models, 0.95, in[i], out[i])
+		sc := scrubbing.NewScrubber(salt, models, 0.95)
+		go scrub(sc, in[i], out[i])
 	}
 	drain := func(to int) {
 		for i := 0; i < to; i++ {

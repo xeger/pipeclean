@@ -1,3 +1,5 @@
+.PHONY: benchmark clean default test
+
 default:
 	cat data/sql/input.sql | ./sqlstream scrub data/models
 
@@ -11,8 +13,11 @@ benchmark:
 	time cat data/sql/benchmark.sql | ./sqlstream scrub data/models > data/sql/benchmark-output.sql
 
 clean:
-	rm -Rf bin
-	rm data/models/*
+	rm -Rf bin/*
+	rm -Rf data/models/*
+
+test:
+	go test ./...
 
 data: data/models/city.json data/models/givenName.json data/models/sn.json data/models/streetName.json
 

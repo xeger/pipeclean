@@ -33,13 +33,13 @@ func assertEq(t *testing.T, a, expected string) {
 }
 
 func TestEmail(t *testing.T) {
-	assertEq(t, "joe@foo.com", "rmy@llb.aby")
-	assertEq(t, "gophers@google.com", "gyvbyiy@jofjoz.sea")
+	assertEq(t, "joe@foo.com", "jyv@iws.com")
+	assertEq(t, "gophers@google.com", "hruhlic@mzovvt.com")
 }
 
 func TestStreetAddress(t *testing.T) {
-	assertEq(t, "100 Cloverdale Ln", "200 Cloverdale Ln")
-	assertEq(t, "23846 Maybach Cir", "85295 Maybach Cir")
+	assertEq(t, "100 Cloverdale Ln", "300 Cloverdale Ln")
+	assertEq(t, "23846 Maybach Cir", "87624 Maybach Cir")
 }
 
 func TestStreetSuffix(t *testing.T) {
@@ -66,6 +66,6 @@ func TestStreetSuffix(t *testing.T) {
 }
 
 func TestTelUS(t *testing.T) {
-	assertEq(t, "805-555-1212", "404-788-3692")
-	assertEq(t, "(805) 555-1212", "(702) 497-7713")
+	assertEq(t, "805-555-1212", "705-231-9867")
+	assertEq(t, "(805) 555-1212", "(902) 418-6892")
 }

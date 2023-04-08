@@ -1,4 +1,4 @@
-package scrubbing
+package mysql
 
 import (
 	"bytes"
