@@ -1,5 +1,5 @@
 /bin
-*.csv
-*.json
-*.sql
-*.txt
+/data/**/*.csv
+/data/**/*.json
+/data/**/*.sql
+/data/**/*.txt
