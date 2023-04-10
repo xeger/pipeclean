@@ -8,15 +8,6 @@ import (
 	"github.com/xeger/sqlstream/scrubbing"
 )
 
-// Preserves non-parseable lines (assuming they are comments).
-const doComments = false
-
-// Preserves INSERT statements (disable to make debug printfs readable).
-const doInserts = true
-
-// Preserves non-insert lines (LOCK/UNLOCK/SET/...).
-const doMisc = false
-
 func scrub(msc *mysqlScrubber, p *parser.Parser, line string) string {
 	buf := bytes.NewBufferString("")
 

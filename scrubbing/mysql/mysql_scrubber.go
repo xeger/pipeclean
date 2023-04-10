@@ -10,6 +10,15 @@ type mysqlScrubber struct {
 	*scrubbing.Scrubber
 }
 
+// Preserves non-parseable lines (assuming they are comments).
+const doComments = true
+
+// Preserves INSERT statements (disable to make debug printfs readable).
+const doInserts = true
+
+// Preserves non-insert lines (LOCK/UNLOCK/SET/...).
+const doMisc = true
+
 // Removes sensitive data from an SQL statement AST.
 // May modify the AST in-place (and return it), or may return a derived AST.
 // Returns nil if the entire statement should be dropped.

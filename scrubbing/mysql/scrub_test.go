@@ -47,7 +47,7 @@ func scrub(input string) string {
 }
 
 func TestCreateTables(t *testing.T) {
-	input := read(t, "insert.sql")
+	input := read(t, "create_tables.sql")
 	output := scrub(input)
 
 	if strings.Index(output, "DROP TABLE IF EXISTS") < 0 {
