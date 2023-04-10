@@ -15,12 +15,13 @@ import (
 
 var reBase64 = regexp.MustCompile(`^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$`)
 
-// Numeric sequence (e.g. street address) that may be part of a larger phrase.
-var reContainsNum = regexp.MustCompile(`#?\d{1,5}`)
+// Phrase that contains a numeric sequence (i.e. a street address).
+var reContainsNum = regexp.MustCompile(`#?[0-9-]{1,7}`)
 
-// Numeric sequence (e.g. street address).
-var reNum = regexp.MustCompile(`^#?\d{1,5}$`)
+// Integer in decimal notation with optional leading sign.
+var reIntDec = regexp.MustCompile(`[+-]?0|[1-9]\d*`)
 
+// Telephone number.
 var reTelUS = regexp.MustCompile(`^\(?\d{3}\)?[ -]?\d{3}-?\d{4}$`)
 
 var reZip = regexp.MustCompile(`^\d{5}(-\d{4})?$`)
@@ -81,7 +82,7 @@ func (sc *Scrubber) ScrubString(s string) string {
 		area = sc.mask(area)
 		num = sc.mask(num)
 		return fmt.Sprintf("%s-%s", area, num)
-	} else if reNum.MatchString(s) || reZip.MatchString(s) {
+	} else if reZip.MatchString(s) {
 		return sc.mask(s)
 	}
 
@@ -104,10 +105,10 @@ func (sc *Scrubber) ScrubString(s string) string {
 	// Mask each part of short phrases of 2-10 words that contain a numeric component.
 	if reContainsNum.MatchString(s) {
 		spaces := strings.Count(s, " ")
-		if spaces > 0 && spaces < 10 {
+		if spaces > 1 && spaces < 10 {
 			words := strings.Fields(s)
 			for i, w := range words {
-				words[i] = sc.ScrubString(w)
+				words[i] = sc.ScrubSubstring(w)
 			}
 			return strings.Join(words, " ")
 		}
@@ -154,6 +155,16 @@ func (sc *Scrubber) ScrubString(s string) string {
 	}
 
 	return s
+}
+
+// ScrubSubstring performs extra-diligent masking assuming that s is a
+// substring of a larger phrase.
+func (sc *Scrubber) ScrubSubstring(s string) string {
+	if reIntDec.MatchString(s) {
+		return sc.mask(s)
+	}
+
+	return sc.ScrubString(s)
 }
 
 // Scrambles letters and numbers; preserves case, punctuation, and special characters.

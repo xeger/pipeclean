@@ -8,59 +8,70 @@ import (
 
 const salt = "github.com/xeger/sqlstream/scrubbing"
 
-func assertChange(t *testing.T, a string) {
-	s := scrubbing.NewScrubber(salt, nil, 0.95)
-	b := s.ScrubString(a)
-	if a == b {
-		t.Errorf(`scrubString(%q) = %q, want a scrambled value`, a, b)
-	}
+func scrub(s string) string {
+	return scrubSalted(s, "")
 }
 
-func assertNoChange(t *testing.T, a string) {
-	s := scrubbing.NewScrubber(salt, nil, 0.95)
-	b := s.ScrubString(a)
-	if a != b {
-		t.Errorf(`scrubString(%q) = %q, want unchanged value`, a, b)
-	}
-}
-
-func assertEq(t *testing.T, a, expected string) {
-	s := scrubbing.NewScrubber(salt, nil, 0.95)
-	b := s.ScrubString(a)
-	if b != expected {
-		t.Errorf(`scrubString(%q) = %q, expected %q`, a, b, expected)
-	}
+func scrubSalted(s, salt string) string {
+	sc := scrubbing.NewScrubber(salt, nil, 0.95)
+	return sc.ScrubString(s)
 }
 
 func TestDeepJSON(t *testing.T) {
-	json1 := `{"email":"joe@foo.com"}`
-	json1s := `{"email":"jyv@iws.com"}`
-	assertEq(t, json1, json1s)
+	in := `{"email":"joe@foo.com"}`
+	exp := `{"email":"jyv@iws.com"}`
+	if got := scrub(in); got != exp {
+		t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
+	}
 }
 
 func TestDeepYAML(t *testing.T) {
-	yaml1 := "email: joe@foo.com\n"
-	yaml1s := "email: jyv@iws.com\n"
-	assertEq(t, yaml1, yaml1s)
+	in := "email: joe@foo.com\n"
+	exp := "email: jyv@iws.com\n"
+	if got := scrub(in); got != exp {
+		t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
+	}
 
 	// BUG: YAML metadata & document structure are not preserved
 	// TODO: investigate yaml.Node & build a scrubbing/yaml package if needed
 	//  - preserves comments
 	//  - hopefully has a way to preserve type markers
-	yaml2 := `--- !ruby/hash
+	in2 := `--- !ruby/hash
 email: joe@foo.com
 `
-	assertEq(t, yaml2, yaml1s)
+	if got2 := scrub(in2); got2 != exp {
+		t.Errorf(`scrub(%q) = %q, want %q`, in2, got2, exp)
+	}
 }
 
 func TestEmail(t *testing.T) {
-	assertEq(t, "joe@foo.com", "jyv@iws.com")
-	assertEq(t, "gophers@google.com", "hruhlic@mzovvt.com")
+	cases := map[string]string{
+		"joe@foo.com":        "jyv@iws.com",
+		"gophers@google.com": "hruhlic@mzovvt.com",
+	}
+	for in, exp := range cases {
+		if got := scrub(in); got != exp {
+			t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
+		}
+	}
+}
+
+func TestNumerics(t *testing.T) {
+	if got := scrub("74"); got != "74" {
+		t.Errorf(`scrub(%q) = %q, want unchanged`, "74", got)
+	}
 }
 
 func TestStreetAddress(t *testing.T) {
-	assertEq(t, "100 Cloverdale Ln", "300 Cloverdale Ln")
-	assertEq(t, "23846 Maybach Cir", "87624 Maybach Cir")
+	cases := map[string]string{
+		"100 Cloverdale Ln": "300 Cloverdale Ln",
+		"23846 Maybach Cir": "87624 Maybach Cir",
+	}
+	for in, exp := range cases {
+		if got := scrub(in); got != exp {
+			t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
+		}
+	}
 }
 
 func TestStreetSuffix(t *testing.T) {
@@ -82,11 +93,20 @@ func TestStreetSuffix(t *testing.T) {
 		"Way",
 	}
 	for _, suffix := range suffixes {
-		assertNoChange(t, suffix)
+		if got := scrub(suffix); got != suffix {
+			t.Errorf(`scrub(%q) = %q, want unchanged`, suffix, got)
+		}
 	}
 }
 
 func TestTelUS(t *testing.T) {
-	assertEq(t, "805-555-1212", "705-231-9867")
-	assertEq(t, "(805) 555-1212", "(902) 418-6892")
+	cases := map[string]string{
+		"805-555-1212":   "705-231-9867",
+		"(805) 555-1212": "(902) 418-6892",
+	}
+	for in, exp := range cases {
+		if got := scrub(in); got != exp {
+			t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
+		}
+	}
 }
