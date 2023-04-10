@@ -1,19 +1,21 @@
-.PHONY: benchmark clean default test
+.PHONY: benchmark bin clean default test
 
 default:
 	cat data/sql/input.sql | ./sqlstream scrub data/models
 
-bin: $(find . -type f -name '*.go')
-	mkdir -p bin
+bin: bin/sqlstream-darwin-amd64 bin/sqlstream-darwin-arm64
+
+bin/sqlstream-darwin-amd64:
 	env GOOS=darwin GOARCH=amd64 go build -o bin/sqlstream-darwin-amd64
-	env GOOS=darwin GOARCH=arm64 go build -o bin/sqlstream-darwin-arm64
-	touch bin
+
+bin/sqlstream-darwin-arm64:
+	env GOOS=darwin GOARCH=amd64 go build -o bin/sqlstream-darwin-arm64
 
 benchmark:
 	time cat data/sql/benchmark.sql | ./sqlstream scrub data/models > data/sql/benchmark-output.sql
 
 clean:
-	rm -Rf bin/*
+	rm -Rf bin
 	rm -Rf data/models/*
 
 test:
