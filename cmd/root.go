@@ -5,8 +5,6 @@ import (
 )
 
 var (
-	format string
-
 	rootCmd = &cobra.Command{
 		Use:       "pipeclean",
 		Short:     "PipeClean",

@@ -12,8 +12,6 @@ import (
 
 // Used for flags.
 var (
-	confidence float64
-
 	recognizeCmd = &cobra.Command{
 		Use:   "recognize",
 		Short: "Test a model against input lines",
@@ -24,7 +22,7 @@ Prints input lines that match the model.`,
 )
 
 func init() {
-	recognizeCmd.PersistentFlags().Float64Var(&confidence, "confidence", 0.5, "minimum probability to consider a match")
+	recognizeCmd.PersistentFlags().Float64VarP(&confidence, "confidence", "c", 0.5, "minimum probability to consider a match")
 }
 
 func recognize(cmd *cobra.Command, args []string) {

@@ -15,9 +15,6 @@ import (
 
 // Used for flags.
 var (
-	parallelism int
-	salt        string
-
 	scrubCmd = &cobra.Command{
 		Use:   "scrub",
 		Short: "Scrub",
@@ -29,6 +26,7 @@ var (
 type scrubFunc func(*scrubbing.Scrubber, <-chan string, chan<- string)
 
 func init() {
+	scrubCmd.PersistentFlags().Float64VarP(&confidence, "confidence", "c", 0.5, "minimum probability to consider a match")
 	scrubCmd.PersistentFlags().IntVarP(&parallelism, "parallelism", "p", runtime.NumCPU(), "lines to scrub at once")
 	scrubCmd.PersistentFlags().StringVarP(&salt, "salt", "s", "", "static diversifier for PRNG seed")
 }
