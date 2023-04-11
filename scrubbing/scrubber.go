@@ -167,7 +167,7 @@ func (sc *Scrubber) ScrubSubstring(s string) string {
 	return sc.ScrubString(s)
 }
 
-// Scrambles letters and numbers; preserves case, punctuation, and special characters.
+// Mask scrambles letters and numbers, preserving case, punctuation, and special characters.
 // As a special case, preserves 0 (and thus the distribution of zero to nonzero).
 // Always returns the same output for a given input.
 func (sc *Scrubber) mask(s string) string {

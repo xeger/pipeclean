@@ -2,6 +2,8 @@ package nlp
 
 import "unicode"
 
+// Clean returns the lower-case representation of the input string with
+// whitespace trimmed and normalized to a single 0x20 (SPC) character.
 func Clean(input string) string {
 	output := make([]rune, 0, len(input))
 

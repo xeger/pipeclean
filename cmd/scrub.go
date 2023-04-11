@@ -20,8 +20,8 @@ var (
 
 	scrubCmd = &cobra.Command{
 		Use:   "scrub",
-		Short: "Mask sensitive data in a MySQL dump",
-		Long:  `Parses stdin as SQL; prints masked SQL to stdout.`,
+		Short: "Mask or remove sensitive data in a MySQL dump",
+		Long:  `Parses stdin as SQL; prints scrubbed SQL to stdout.`,
 		Run:   scrub,
 	}
 )
@@ -61,19 +61,20 @@ func loadModels(paths []string) ([]nlp.Model, error) {
 }
 
 func scrub(cmd *cobra.Command, args []string) {
-	var scrub scrubFunc
-	switch format {
-	case "mysql":
-		scrub = mysql.ScrubChan
-	default:
-		panic("unknown format: " + format)
-	}
-
 	models, err := loadModels(args)
 	if err != nil {
 		panic(err.Error())
 	}
 
+	switch format {
+	case "mysql":
+		scrubMysql(models)
+	default:
+		panic("unknown format: " + format)
+	}
+}
+
+func scrubMysql(models []nlp.Model) {
 	N := parallelism
 
 	in := make([]chan string, N)
@@ -82,7 +83,7 @@ func scrub(cmd *cobra.Command, args []string) {
 		in[i] = make(chan string)
 		out[i] = make(chan string)
 		sc := scrubbing.NewScrubber(salt, models, 0.95)
-		go scrub(sc, in[i], out[i])
+		go mysql.ScrubChan(sc, in[i], out[i])
 	}
 	drain := func(to int) {
 		for i := 0; i < to; i++ {
