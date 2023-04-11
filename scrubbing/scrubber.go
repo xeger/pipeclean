@@ -51,16 +51,16 @@ func (sc *Scrubber) EraseString(s string) bool {
 }
 
 // ScrubData recursively scrubs maps and arrays in-place.
-func (sc *Scrubber) ScrubData(data interface{}) interface{} {
+func (sc *Scrubber) ScrubData(data any) any {
 	switch v := data.(type) {
 	case string:
 		return sc.ScrubString(v)
-	case []interface{}:
+	case []any:
 		for i, e := range v {
 			v[i] = sc.ScrubData(e)
 		}
 		return v
-	case map[string]interface{}:
+	case map[string]any:
 		for k, e := range v {
 			v[k] = sc.ScrubData(e)
 		}
@@ -116,7 +116,7 @@ func (sc *Scrubber) ScrubString(s string) string {
 
 	// Handle deep scrubbing (e.g. JSON/YAML in string).
 	if !sc.shallow {
-		var data interface{}
+		var data any
 
 		if err := json.Unmarshal([]byte(s), &data); err == nil {
 			scrubbed, err := json.Marshal(sc.ScrubData(data))
@@ -128,7 +128,7 @@ func (sc *Scrubber) ScrubString(s string) string {
 
 		if err := yaml.Unmarshal([]byte(s), &data); err == nil {
 			switch v := data.(type) {
-			case []interface{}, map[string]interface{}:
+			case []any, map[string]any:
 				scrubbed, err := yaml.Marshal(sc.ScrubData(v))
 				if err != nil {
 					panic(err)

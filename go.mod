@@ -1,6 +1,6 @@
 module github.com/xeger/sqlstream
 
-go 1.17
+go 1.20
 
 require (
 	github.com/pingcap/tidb/parser v0.0.0-20230402100455-fc0751d0f9bc
