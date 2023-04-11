@@ -15,14 +15,13 @@ import (
 
 // Used for flags.
 var (
-	format      string
 	parallelism int
 	salt        string
 
 	scrubCmd = &cobra.Command{
 		Use:   "scrub",
-		Short: "Mask or remove sensitive data in a MySQL dump",
-		Long:  `Parses stdin as SQL; prints scrubbed SQL to stdout.`,
+		Short: "Scrub",
+		Long:  "Mask or remove sensitive data",
 		Run:   scrub,
 	}
 )
@@ -30,7 +29,6 @@ var (
 type scrubFunc func(*scrubbing.Scrubber, <-chan string, chan<- string)
 
 func init() {
-	scrubCmd.PersistentFlags().StringVar(&format, "format", "mysql", "data type: mysql, ")
 	scrubCmd.PersistentFlags().IntVar(&parallelism, "parallelism", runtime.NumCPU(), "lines to scrub at once")
 	scrubCmd.PersistentFlags().StringVar(&salt, "salt", "", "static diversifier for text-masking PRNG")
 }

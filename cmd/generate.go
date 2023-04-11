@@ -13,8 +13,8 @@ import (
 var (
 	generateCmd = &cobra.Command{
 		Use:   "generate",
-		Short: "TODO",
-		Long:  `TODO`,
+		Short: "Generate",
+		Long:  `Generate random text from a model.`,
 		Run:   generate,
 	}
 )
