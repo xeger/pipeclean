@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/xeger/sqlstream/nlp"
 	"github.com/xeger/sqlstream/scrubbing"
+	"github.com/xeger/sqlstream/scrubbing/json"
 	"github.com/xeger/sqlstream/scrubbing/mysql"
 )
 
@@ -67,11 +68,19 @@ func scrub(cmd *cobra.Command, args []string) {
 	}
 
 	switch format {
+	case "json":
+		scrubJson(models)
 	case "mysql":
 		scrubMysql(models)
 	default:
 		panic("unknown format: " + format)
 	}
+}
+
+func scrubJson(models []nlp.Model) {
+	sc := scrubbing.NewScrubber(salt, models, 0.95)
+	// TODO: parallelize JSON scrubbing (but not parsing)
+	json.Scrub(sc, os.Stdin, os.Stdout)
 }
 
 func scrubMysql(models []nlp.Model) {
