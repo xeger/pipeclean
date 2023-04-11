@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/xeger/sqlstream/nlp"
+	"github.com/xeger/pipeclean/nlp"
 )
 
 // Used for flags.
@@ -32,7 +32,7 @@ func recognize(cmd *cobra.Command, args []string) {
 	if len(args) == 1 {
 		modelFile = args[0]
 	} else {
-		fmt.Fprintln(os.Stderr, "Usage: sqlstream recognize <modelFile>")
+		fmt.Fprintln(os.Stderr, "Usage: pipeclean recognize <modelFile>")
 		os.Exit(1)
 	}
 

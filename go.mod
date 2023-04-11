@@ -1,4 +1,4 @@
-module github.com/xeger/sqlstream
+module github.com/xeger/pipeclean
 
 go 1.20
 

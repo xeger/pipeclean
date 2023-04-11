@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/xeger/gomarkov"
-	"github.com/xeger/sqlstream/rand"
+	"github.com/xeger/pipeclean/rand"
 )
 
 type MarkovModel struct {
@@ -21,7 +21,7 @@ type markovModelJSON struct {
 	Chain     gomarkov.Chain `json:"chain"`
 }
 
-const markovModelTypeID = "github.com/xeger/sqlstream/nlp.MarkovModel"
+const markovModelTypeID = "github.com/xeger/pipeclean/nlp.MarkovModel"
 
 func NewMarkovModel(order int, separator string) *MarkovModel {
 	return &MarkovModel{

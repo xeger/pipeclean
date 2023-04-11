@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/xeger/sqlstream/nlp"
-	"github.com/xeger/sqlstream/rand"
+	"github.com/xeger/pipeclean/nlp"
+	"github.com/xeger/pipeclean/rand"
 	"gopkg.in/yaml.v3"
 )
 

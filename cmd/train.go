@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/xeger/sqlstream/nlp"
+	"github.com/xeger/pipeclean/nlp"
 )
 
 // Used for flags.
@@ -51,11 +51,11 @@ func train(cmd *cobra.Command, args []string) {
 		case "words":
 			markovSep = ""
 		default:
-			fmt.Fprintln(os.Stderr, "Usage: sqlstream train <modelType>[param1:param2:...]")
+			fmt.Fprintln(os.Stderr, "Usage: pipeclean train <modelType>[param1:param2:...]")
 			fmt.Fprintln(os.Stderr, "Examples:")
-			fmt.Fprintln(os.Stderr, "  sqlstream train dict # dictionary-lookup model")
-			fmt.Fprintln(os.Stderr, "  sqlstream train markov:words:5 # markov word model of order 5")
-			fmt.Fprintln(os.Stderr, "  sqlstream train markov:sentences:3 # markov sentence model of order 5")
+			fmt.Fprintln(os.Stderr, "  pipeclean train dict # dictionary-lookup model")
+			fmt.Fprintln(os.Stderr, "  pipeclean train markov:words:5 # markov word model of order 5")
+			fmt.Fprintln(os.Stderr, "  pipeclean train markov:sentences:3 # markov sentence model of order 5")
 			os.Exit(1)
 		}
 

@@ -3,7 +3,7 @@ package rand_test
 import (
 	"testing"
 
-	"github.com/xeger/sqlstream/rand"
+	"github.com/xeger/pipeclean/rand"
 )
 
 func TestNewSource(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pingcap/tidb/parser"
-	"github.com/xeger/sqlstream/scrubbing"
+	"github.com/xeger/pipeclean/scrubbing"
 )
 
 func scrub(msc *mysqlScrubber, p *parser.Parser, line string) string {

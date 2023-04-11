@@ -1,4 +1,4 @@
 #! /bin/sh
 
-# Convenience wrapper for running sqlstream from source.
+# Convenience wrapper for running pipeclean from source.
 exec go run main.go $@

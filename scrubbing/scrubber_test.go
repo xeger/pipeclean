@@ -3,10 +3,10 @@ package scrubbing_test
 import (
 	"testing"
 
-	"github.com/xeger/sqlstream/scrubbing"
+	"github.com/xeger/pipeclean/scrubbing"
 )
 
-const salt = "github.com/xeger/sqlstream/scrubbing"
+const salt = "github.com/xeger/pipeclean/scrubbing"
 
 func scrub(s string) string {
 	return scrubSalted(s, "")

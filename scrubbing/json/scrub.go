@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/xeger/sqlstream/scrubbing"
+	"github.com/xeger/pipeclean/scrubbing"
 )
 
 // Scrub sanitizes a single line, which may contain multiple SQL statements.

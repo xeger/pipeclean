@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/xeger/sqlstream/nlp"
+	"github.com/xeger/pipeclean/nlp"
 )
 
 // Used for flags.
@@ -24,7 +24,7 @@ func generate(cmd *cobra.Command, args []string) {
 	if len(args) == 1 {
 		modelFile = args[0]
 	} else {
-		fmt.Fprintln(os.Stderr, "Usage: sqlstream generate <modelFile>")
+		fmt.Fprintln(os.Stderr, "Usage: pipeclean generate <modelFile>")
 		os.Exit(1)
 	}
 

@@ -7,10 +7,10 @@ import (
 	"runtime"
 
 	"github.com/spf13/cobra"
-	"github.com/xeger/sqlstream/nlp"
-	"github.com/xeger/sqlstream/scrubbing"
-	"github.com/xeger/sqlstream/scrubbing/json"
-	"github.com/xeger/sqlstream/scrubbing/mysql"
+	"github.com/xeger/pipeclean/nlp"
+	"github.com/xeger/pipeclean/scrubbing"
+	"github.com/xeger/pipeclean/scrubbing/json"
+	"github.com/xeger/pipeclean/scrubbing/mysql"
 )
 
 // Used for flags.

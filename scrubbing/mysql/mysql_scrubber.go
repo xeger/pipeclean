@@ -3,7 +3,7 @@ package mysql
 import (
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/test_driver"
-	"github.com/xeger/sqlstream/scrubbing"
+	"github.com/xeger/pipeclean/scrubbing"
 )
 
 type mysqlScrubber struct {

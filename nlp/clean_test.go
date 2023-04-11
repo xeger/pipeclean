@@ -3,7 +3,7 @@ package nlp_test
 import (
 	"testing"
 
-	"github.com/xeger/sqlstream/nlp"
+	"github.com/xeger/pipeclean/nlp"
 )
 
 func TestClean(t *testing.T) {

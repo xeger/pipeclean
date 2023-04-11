@@ -6,7 +6,7 @@ import (
 
 var (
 	rootCmd = &cobra.Command{
-		Use:   "sqlstream",
+		Use:   "pipeclean",
 		Short: "Streaming MySQL Sanitizer",
 		Long: `Masks sensitive text in MySQL dumps.
 Uses a heuristic rule system, applying language models to avoid depending on

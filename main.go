@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/xeger/sqlstream/cmd"
+	"github.com/xeger/pipeclean/cmd"
 )
 
 func main() {
