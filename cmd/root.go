@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&format, "format", "", "input format")
+	rootCmd.PersistentFlags().StringVarP(&format, "format", "f", "", "input format")
 	rootCmd.MarkFlagRequired("format")
 	rootCmd.AddCommand(generateCmd)
 	rootCmd.AddCommand(recognizeCmd)

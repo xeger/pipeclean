@@ -29,8 +29,8 @@ var (
 type scrubFunc func(*scrubbing.Scrubber, <-chan string, chan<- string)
 
 func init() {
-	scrubCmd.PersistentFlags().IntVar(&parallelism, "parallelism", runtime.NumCPU(), "lines to scrub at once")
-	scrubCmd.PersistentFlags().StringVar(&salt, "salt", "", "static diversifier for text-masking PRNG")
+	scrubCmd.PersistentFlags().IntVarP(&parallelism, "parallelism", "p", runtime.NumCPU(), "lines to scrub at once")
+	scrubCmd.PersistentFlags().StringVarP(&salt, "salt", "s", "", "static diversifier for PRNG seed")
 }
 
 func loadModels(paths []string) ([]nlp.Model, error) {
