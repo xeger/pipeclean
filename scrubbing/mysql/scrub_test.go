@@ -3,6 +3,7 @@ package mysql_test
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -43,7 +44,9 @@ func scrub(input string) string {
 	close(out)
 
 	writer.Flush()
-	return output.String()
+	outputString := output.String()
+	fmt.Printf("----BEGIN SCRUB OUTPUT----\n%s\n----END SCRUB OUTPUT----\n", outputString)
+	return outputString
 }
 
 func TestCreateTables(t *testing.T) {
@@ -58,8 +61,23 @@ func TestCreateTables(t *testing.T) {
 	}
 }
 
-func TestInsert(t *testing.T) {
-	input := read(t, "insert.sql")
+func TestInsertNamed(t *testing.T) {
+	input := read(t, "insert-named.sql")
+	output := scrub(input)
+
+	if strings.Index(output, "LOCK TABLES") < 0 {
+		t.Errorf("LOCK TABLES statement is missing")
+	}
+	if strings.Index(output, "INSERT INTO `bank_accounts` (`id`,`routing_number`) VALUES (1,'111000025'),(2,'226073523');") < 0 {
+		t.Errorf("INSERT statement not properly sanitized")
+	}
+	if strings.Index(output, "UNLOCK TABLES") < 0 {
+		t.Errorf("UNLOCK TABLES statement is missing")
+	}
+}
+
+func TestInsertPositional(t *testing.T) {
+	input := read(t, "insert-positional.sql")
 	output := scrub(input)
 
 	if strings.Index(output, "LOCK TABLES") < 0 {

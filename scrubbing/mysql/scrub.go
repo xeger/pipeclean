@@ -30,7 +30,7 @@ func scrub(msc *mysqlScrubber, p *parser.Parser, line string) string {
 
 // Scrub sanitizes a single line, which may contain multiple SQL statements.
 func Scrub(sc *scrubbing.Scrubber, line string) string {
-	msc := &mysqlScrubber{sc}
+	msc := &mysqlScrubber{sc, nil}
 	p := parser.New()
 	return scrub(msc, p, line)
 }
@@ -39,7 +39,7 @@ func Scrub(sc *scrubbing.Scrubber, line string) string {
 // SQL statements. It sends one string for every string received, allowing the
 // caller to handle parallelism.
 func ScrubChan(sc *scrubbing.Scrubber, in <-chan string, out chan<- string) {
-	msc := &mysqlScrubber{sc}
+	msc := &mysqlScrubber{sc, nil}
 	p := parser.New()
 	for line := range in {
 		out <- scrub(msc, p, line)
