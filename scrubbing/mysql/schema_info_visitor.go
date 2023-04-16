@@ -22,7 +22,9 @@ func (siv *schemaInfoVisitor) Enter(in ast.Node) (ast.Node, bool) {
 	switch st := in.(type) {
 	case *ast.TableName:
 		siv.tableName = st.Name.L
-		siv.info.TableColumns[siv.tableName] = make([]string, 0, 32)
+		if siv.info.TableColumns[siv.tableName] == nil {
+			siv.info.TableColumns[siv.tableName] = make([]string, 0, 32)
+		}
 	case *ast.ColumnDef:
 		siv.columnDef = true
 	case *ast.ColumnName:

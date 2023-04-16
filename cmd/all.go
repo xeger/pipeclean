@@ -5,6 +5,7 @@ package cmd
 // a float64 in B, too.
 var (
 	confidence  float64
+	context     []string
 	format      string
 	parallelism int
 	salt        string

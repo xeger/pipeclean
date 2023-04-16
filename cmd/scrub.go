@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"runtime"
 
@@ -27,6 +28,7 @@ type scrubFunc func(*scrubbing.Scrubber, <-chan string, chan<- string)
 
 func init() {
 	scrubCmd.PersistentFlags().Float64VarP(&confidence, "confidence", "c", 0.5, "minimum probability to consider a match")
+	scrubCmd.PersistentFlags().StringSliceVarP(&context, "context", "x", []string{}, "extra files to parse for improved accuracy")
 	scrubCmd.PersistentFlags().IntVarP(&parallelism, "parallelism", "p", runtime.NumCPU(), "lines to scrub at once")
 	scrubCmd.PersistentFlags().StringVarP(&salt, "salt", "s", "", "static diversifier for PRNG seed")
 }
@@ -74,12 +76,20 @@ func scrub(cmd *cobra.Command, args []string) {
 }
 
 func scrubJson(models []nlp.Model) {
-	sc := scrubbing.NewScrubber(salt, models, 0.95)
+	sc := scrubbing.NewScrubber(salt, models, confidence)
 	// TODO: parallelize JSON scrubbing (but not parsing)
 	json.Scrub(sc, os.Stdin, os.Stdout)
 }
 
 func scrubMysql(models []nlp.Model) {
+	ctx := mysql.NewScrubContext()
+	for _, file := range context {
+		sql, err := ioutil.ReadFile(file)
+		if err != nil {
+			panic(err.Error())
+		}
+		ctx.Scan(string(sql))
+	}
 	N := parallelism
 
 	in := make([]chan string, N)
@@ -87,7 +97,7 @@ func scrubMysql(models []nlp.Model) {
 	for i := 0; i < N; i++ {
 		in[i] = make(chan string)
 		out[i] = make(chan string)
-		sc := scrubbing.NewScrubber(salt, models, 0.95)
+		sc := scrubbing.NewScrubber(salt, models, confidence)
 		go mysql.ScrubChan(sc, in[i], out[i])
 	}
 	drain := func(to int) {
