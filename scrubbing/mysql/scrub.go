@@ -32,8 +32,8 @@ func scrub(sv *scrubVisitor, p *parser.Parser, line string) string {
 // SQL statements. It sends one output string for every input string received,
 // even for multi-line or multi-statement inputs. This allows the caller to
 // handle parallelism as desired.
-func ScrubChan(sc *scrubbing.Scrubber, in <-chan string, out chan<- string) {
-	sv := &scrubVisitor{sc, nil}
+func ScrubChan(ctx *ScrubContext, sc *scrubbing.Scrubber, in <-chan string, out chan<- string) {
+	sv := &scrubVisitor{ctx, sc, nil}
 	p := parser.New()
 	for line := range in {
 		out <- scrub(sv, p, line)

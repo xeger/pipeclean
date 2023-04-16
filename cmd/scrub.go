@@ -98,7 +98,7 @@ func scrubMysql(models []nlp.Model) {
 		in[i] = make(chan string)
 		out[i] = make(chan string)
 		sc := scrubbing.NewScrubber(salt, models, confidence)
-		go mysql.ScrubChan(sc, in[i], out[i])
+		go mysql.ScrubChan(ctx, sc, in[i], out[i])
 	}
 	drain := func(to int) {
 		for i := 0; i < to; i++ {

@@ -28,8 +28,9 @@ func scrub(input string) string {
 	output := bytes.NewBuffer(make([]byte, 0, len(input)))
 	writer := bufio.NewWriter(output)
 
+	ctx := mysql.NewScrubContext()
 	scrubber := scrubbing.NewScrubber("", nil, 0.95)
-	go mysql.ScrubChan(scrubber, in, out)
+	go mysql.ScrubChan(ctx, scrubber, in, out)
 
 	for {
 		line, err := reader.ReadString('\n')

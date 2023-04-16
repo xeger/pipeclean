@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"net/mail"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/xeger/pipeclean/nlp"
@@ -46,23 +47,23 @@ func NewScrubber(salt string, models []nlp.Model, confidence float64) *Scrubber 
 //
 // It returns true for base64 encoded values since they are opaque and cannot be scrubbed;
 // it's safest to remove them from the stream entirely.
-func (sc *Scrubber) EraseString(s string) bool {
+func (sc *Scrubber) EraseString(s, field string) bool {
 	return reBase64.MatchString(s)
 }
 
 // ScrubData recursively scrubs maps and arrays in-place.
-func (sc *Scrubber) ScrubData(data any) any {
+func (sc *Scrubber) ScrubData(data any, field string) any {
 	switch v := data.(type) {
 	case string:
-		return sc.ScrubString(v)
+		return sc.ScrubString(v, field)
 	case []any:
 		for i, e := range v {
-			v[i] = sc.ScrubData(e)
+			v[i] = sc.ScrubData(e, strconv.Itoa(i))
 		}
 		return v
 	case map[string]any:
 		for k, e := range v {
-			v[k] = sc.ScrubData(e)
+			v[k] = sc.ScrubData(e, k)
 		}
 		return v
 	default:
@@ -71,7 +72,7 @@ func (sc *Scrubber) ScrubData(data any) any {
 }
 
 // ScrubString masks recognized PII in a string, preserving other values.
-func (sc *Scrubber) ScrubString(s string) string {
+func (sc *Scrubber) ScrubString(s, field string) string {
 	// Mask well-known numeric formats and abbreviations.
 	if reTelUS.MatchString(s) {
 		dash := strings.Index(s, "-")
@@ -108,7 +109,7 @@ func (sc *Scrubber) ScrubString(s string) string {
 		if spaces > 1 && spaces < 10 {
 			words := strings.Fields(s)
 			for i, w := range words {
-				words[i] = sc.ScrubSubstring(w)
+				words[i] = sc.ScrubSubstring(w, field)
 			}
 			return strings.Join(words, " ")
 		}
@@ -119,7 +120,7 @@ func (sc *Scrubber) ScrubString(s string) string {
 		var data any
 
 		if err := json.Unmarshal([]byte(s), &data); err == nil {
-			scrubbed, err := json.Marshal(sc.ScrubData(data))
+			scrubbed, err := json.Marshal(sc.ScrubData(data, ""))
 			if err != nil {
 				panic(err)
 			}
@@ -129,7 +130,7 @@ func (sc *Scrubber) ScrubString(s string) string {
 		if err := yaml.Unmarshal([]byte(s), &data); err == nil {
 			switch v := data.(type) {
 			case []any, map[string]any:
-				scrubbed, err := yaml.Marshal(sc.ScrubData(v))
+				scrubbed, err := yaml.Marshal(sc.ScrubData(v, ""))
 				if err != nil {
 					panic(err)
 				}
@@ -159,12 +160,12 @@ func (sc *Scrubber) ScrubString(s string) string {
 
 // ScrubSubstring performs extra-diligent masking assuming that s is a
 // substring of a larger phrase.
-func (sc *Scrubber) ScrubSubstring(s string) string {
+func (sc *Scrubber) ScrubSubstring(s, field string) string {
 	if reIntDec.MatchString(s) {
 		return sc.mask(s)
 	}
 
-	return sc.ScrubString(s)
+	return sc.ScrubString(s, field)
 }
 
 // Mask scrambles letters and numbers, preserving case, punctuation, and special characters.

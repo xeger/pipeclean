@@ -25,20 +25,21 @@ func (is insertState) ColumnName() string {
 }
 
 type scrubVisitor struct {
-	*scrubbing.Scrubber
-	insert *insertState
+	ctx      *ScrubContext
+	scrubber *scrubbing.Scrubber
+	insert   *insertState
 }
 
 // ScrubStatement sensitive data from an SQL AST.
 // May modify the AST in-place (and return it), or may return a derived AST.
 // Returns nil if the entire statement should be omitted from output.
-func (sc *scrubVisitor) ScrubStatement(stmt ast.StmtNode) (ast.StmtNode, bool) {
+func (sv *scrubVisitor) ScrubStatement(stmt ast.StmtNode) (ast.StmtNode, bool) {
 	switch stmt.(type) {
 	case *ast.InsertStmt:
 		if doInserts {
-			sc.insert = &insertState{}
-			stmt.Accept(sc)
-			sc.insert = nil
+			sv.insert = &insertState{}
+			stmt.Accept(sv)
+			sv.insert = nil
 			return stmt, true
 		} else {
 			return nil, true
@@ -51,32 +52,32 @@ func (sc *scrubVisitor) ScrubStatement(stmt ast.StmtNode) (ast.StmtNode, bool) {
 	}
 }
 
-func (sc *scrubVisitor) Enter(in ast.Node) (ast.Node, bool) {
+func (sv *scrubVisitor) Enter(in ast.Node) (ast.Node, bool) {
 	switch st := in.(type) {
 	case *ast.TableName:
-		if sc.insert != nil {
-			sc.insert.tableName = st.Name.L
+		if sv.insert != nil {
+			sv.insert.tableName = st.Name.L
 		}
 	case *ast.ColumnName:
-		if sc.insert != nil {
-			sc.insert.columnNames = append(sc.insert.columnNames, st.Name.L)
+		if sv.insert != nil {
+			sv.insert.columnNames = append(sv.insert.columnNames, st.Name.L)
 		}
 	case *test_driver.ValueExpr:
-		if sc.insert != nil {
-			if sc.insert.valueIndex == 0 && len(sc.insert.columnNames) == 0 {
-				// TODO: grab column names from schema definition
+		if sv.insert != nil {
+			if sv.insert.valueIndex == 0 && len(sv.insert.columnNames) == 0 {
+				sv.insert.columnNames = sv.ctx.TableColumns[sv.insert.tableName]
 			}
 			defer func() {
-				sc.insert.valueIndex++
+				sv.insert.valueIndex++
 			}()
 			switch st.Kind() {
 			case test_driver.KindString:
 				datum := test_driver.Datum{}
 				s := st.Datum.GetString()
-				if sc.EraseString(s) {
+				if sv.scrubber.EraseString(s, sv.insert.ColumnName()) {
 					datum.SetNull()
 				} else {
-					datum.SetString(sc.ScrubString(s))
+					datum.SetString(sv.scrubber.ScrubString(s, sv.insert.ColumnName()))
 				}
 				return &test_driver.ValueExpr{Datum: datum}, true
 			}
