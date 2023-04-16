@@ -27,7 +27,7 @@ clean:
 test:
 	go test ./...
 
-data: data/models/city.markov.json data/models/givenName.markov.json data/models/sn.markov.json data/models/streetName.markov.json
+data: data/models/city.markov.json data/models/givenName.markov.json data/models/sn.markov.json data/models/streetName.markov.json data/models/tel-us.match.txt
 
 data/models/city.dict.txt: data/training/city.csv
 	tail -n+2 data/training/city.csv | ./pipeclean train dict > data/models/city.dict.txt
