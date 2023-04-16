@@ -15,12 +15,20 @@ import (
 var (
 	trainCmd = &cobra.Command{
 		Use:   "train",
-		Short: "Build a Markov model from a corpus",
+		Short: "Build a natural-language model",
 		Long: `Parses words/phrases from stdin, one per line.
 Prints a JSON representation of the model to stdout.`,
 		Run: train,
 	}
 )
+
+func showUsageForTrain() {
+	fmt.Fprintln(os.Stderr, "Usage: pipeclean train <modelType>[param1:param2:...]")
+	fmt.Fprintln(os.Stderr, "Examples:")
+	fmt.Fprintln(os.Stderr, "  pipeclean train dict # dictionary-lookup model")
+	fmt.Fprintln(os.Stderr, "  pipeclean train markov:words:5 # markov word model of order 5")
+	fmt.Fprintln(os.Stderr, "  pipeclean train markov:sentences:3 # markov sentence model of order 5")
+}
 
 func train(cmd *cobra.Command, args []string) {
 	var err error
@@ -41,6 +49,9 @@ func train(cmd *cobra.Command, args []string) {
 				markovMode = "ERROR" // cause exit(1) below
 			}
 		}
+	} else {
+		showUsageForTrain()
+		os.Exit(1)
 	}
 
 	switch modelType {
@@ -51,11 +62,7 @@ func train(cmd *cobra.Command, args []string) {
 		case "words":
 			markovSep = ""
 		default:
-			fmt.Fprintln(os.Stderr, "Usage: pipeclean train <modelType>[param1:param2:...]")
-			fmt.Fprintln(os.Stderr, "Examples:")
-			fmt.Fprintln(os.Stderr, "  pipeclean train dict # dictionary-lookup model")
-			fmt.Fprintln(os.Stderr, "  pipeclean train markov:words:5 # markov word model of order 5")
-			fmt.Fprintln(os.Stderr, "  pipeclean train markov:sentences:3 # markov sentence model of order 5")
+			showUsageForTrain()
 			os.Exit(1)
 		}
 

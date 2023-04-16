@@ -6,7 +6,7 @@ package cmd
 var (
 	confidence  float64
 	context     []string
-	format      string
+	mode        string
 	parallelism int
 	salt        string
 )

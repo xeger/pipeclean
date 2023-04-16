@@ -11,15 +11,12 @@ var (
 		Long:      `PipeClean Streaming Data Sanitizer.`,
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		ValidArgs: []string{"json", "mysql"},
-		Run: func(cmd *cobra.Command, args []string) {
-			format = args[0]
-		},
 	}
 )
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&format, "format", "f", "", "input format")
-	rootCmd.MarkFlagRequired("format")
+	rootCmd.PersistentFlags().StringVarP(&mode, "mode", "m", "", "data format (json, mysql, etc)")
+	rootCmd.MarkFlagRequired("mode")
 	rootCmd.AddCommand(generateCmd)
 	rootCmd.AddCommand(recognizeCmd)
 	rootCmd.AddCommand(scrubCmd)

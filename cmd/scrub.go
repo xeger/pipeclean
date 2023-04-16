@@ -65,13 +65,14 @@ func scrub(cmd *cobra.Command, args []string) {
 		panic(err.Error())
 	}
 
-	switch format {
+	switch mode {
 	case "json":
 		scrubJson(models)
 	case "mysql":
 		scrubMysql(models)
 	default:
-		panic("unknown format: " + format)
+		// should never happen (cobra should validate)
+		panic("unknown mode: " + mode)
 	}
 }
 
