@@ -1,7 +1,7 @@
 .PHONY: benchmark bin clean default test
 
 default:
-	cat data/sql/input.sql | ./pipeclean scrub data/models
+	cat data/sql/input.sql | ./pipeclean -f mysql scrub data/models
 
 bin: bin/pipeclean-darwin-amd64 bin/pipeclean-darwin-arm64 bin/pipeclean-linux-amd64 bin/pipeclean-linux-arm64
 
@@ -18,7 +18,7 @@ bin/pipeclean-linux-arm64:
 	env GOOS=linux GOARCH=amd64 go build -o bin/pipeclean-linux-arm64
 
 benchmark:
-	time cat data/sql/benchmark.sql | ./pipeclean scrub data/models > data/sql/benchmark-output.sql
+	time cat data/sql/benchmark.sql | ./pipeclean -f mysql scrub data/models > data/sql/benchmark-output.sql
 
 clean:
 	rm -Rf bin

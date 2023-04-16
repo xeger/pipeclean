@@ -24,7 +24,7 @@ func (is insertState) ColumnName() string {
 	return is.columnNames[is.valueIndex%len(is.columnNames)]
 }
 
-type mysqlScrubber struct {
+type scrubVisitor struct {
 	*scrubbing.Scrubber
 	insert *insertState
 }
@@ -32,14 +32,14 @@ type mysqlScrubber struct {
 // ScrubStatement sensitive data from an SQL AST.
 // May modify the AST in-place (and return it), or may return a derived AST.
 // Returns nil if the entire statement should be omitted from output.
-func (sc *mysqlScrubber) ScrubStatement(stmt ast.StmtNode) (ast.StmtNode, bool) {
-	switch st := stmt.(type) {
+func (sc *scrubVisitor) ScrubStatement(stmt ast.StmtNode) (ast.StmtNode, bool) {
+	switch stmt.(type) {
 	case *ast.InsertStmt:
 		if doInserts {
 			sc.insert = &insertState{}
-			st.Accept(sc)
+			stmt.Accept(sc)
 			sc.insert = nil
-			return st, true
+			return stmt, true
 		} else {
 			return nil, true
 		}
@@ -51,7 +51,7 @@ func (sc *mysqlScrubber) ScrubStatement(stmt ast.StmtNode) (ast.StmtNode, bool) 
 	}
 }
 
-func (sc *mysqlScrubber) Enter(in ast.Node) (ast.Node, bool) {
+func (sc *scrubVisitor) Enter(in ast.Node) (ast.Node, bool) {
 	switch st := in.(type) {
 	case *ast.TableName:
 		if sc.insert != nil {
@@ -85,6 +85,6 @@ func (sc *mysqlScrubber) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-func (sc *mysqlScrubber) Leave(in ast.Node) (ast.Node, bool) {
+func (sc *scrubVisitor) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
