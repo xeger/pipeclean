@@ -29,11 +29,8 @@ test:
 
 data: data/models/city.markov.json data/models/givenName.markov.json data/models/sn.markov.json data/models/streetName.markov.json data/models/tel-us.match.txt
 
-data/models/city.dict.txt: data/training/city.csv
-	tail -n+2 data/training/city.csv | ./pipeclean train dict > data/models/city.dict.txt
-
 data/models/city.markov.json: Makefile data/models/city.dict.txt
-	cat data/models/city.dict.txt | ./pipeclean train markov:words:5 > data/models/city.markov.json
+	tail -n+2 data/training/city.csv | ./pipeclean train markov:words:3 > data/models/city.markov.json
 
 data/models/givenName.markov.json: Makefile data/training/givenName.csv
 	tail -n+2 data/training/givenName.csv | ./pipeclean train markov:words:3 > data/models/givenName.markov.json
