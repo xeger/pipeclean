@@ -2,7 +2,6 @@ package nlp
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
 	"strings"
 
@@ -16,12 +15,9 @@ type MarkovModel struct {
 }
 
 type markovModelJSON struct {
-	Type      string         `json:"typ"`
-	Separator string         `json:"sep"`
+	Separator string         `json:"separator"`
 	Chain     gomarkov.Chain `json:"chain"`
 }
-
-const markovModelTypeID = "github.com/xeger/pipeclean/nlp.MarkovModel"
 
 func NewMarkovModel(order int, separator string) *MarkovModel {
 	return &MarkovModel{
@@ -31,7 +27,7 @@ func NewMarkovModel(order int, separator string) *MarkovModel {
 }
 
 func (m *MarkovModel) MarshalJSON() ([]byte, error) {
-	obj := markovModelJSON{Type: markovModelTypeID, Separator: m.separator, Chain: m.chain}
+	obj := markovModelJSON{Separator: m.separator, Chain: m.chain}
 	return json.Marshal(obj)
 }
 
@@ -40,9 +36,6 @@ func (m *MarkovModel) UnmarshalJSON(b []byte) error {
 	err := json.Unmarshal(b, &obj)
 	if err != nil {
 		return err
-	}
-	if obj.Type != markovModelTypeID {
-		return fmt.Errorf("Wrong type; expected %q, got %q", markovModelTypeID, obj.Type)
 	}
 
 	m.chain = obj.Chain

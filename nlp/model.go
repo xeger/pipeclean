@@ -18,32 +18,35 @@ func LoadModel(filename string) (Model, error) {
 		return nil, err
 	}
 
-	header := string(d[0:256])
-
 	name := filepath.Base(filename)
-	ext := filepath.Ext(name)
+	suffix2 := filepath.Ext(name)
+	suffix1 := filepath.Ext(strings.TrimSuffix(name, suffix2))
+	ext := strings.Join([]string{suffix1, suffix2}, "")
+
 	// nickname = strings.TrimSuffix(name, ext)
 
 	switch ext {
-	case ".json":
-		if strings.Index(header, markovModelTypeID) >= 0 {
-			m := MarkovModel{}
+	case ".markov.json":
+		m := MarkovModel{}
 
-			if err = m.UnmarshalJSON(d); err != nil {
-				return nil, err
-			}
-			return &m, nil
-		} else {
-			return nil, fmt.Errorf("nlp.LoadModel: Malformed model JSON (unknown type) in %q", name)
+		if err = m.UnmarshalJSON(d); err != nil {
+			return nil, err
 		}
-	case ".txt":
+		return &m, nil
+	case ".dict.txt":
 		m := DictModel{}
 		if err = m.UnmarshalText(d); err != nil {
 			return nil, err
 		}
 		return &m, nil
+	case ".match.txt":
+		m := MatchModel{}
+		if err = m.UnmarshalText(d); err != nil {
+			return nil, err
+		}
+		return &m, nil
 	default:
-		return nil, fmt.Errorf(`nlp.LoadModel: Malformed model (unknown extension) of %q`, name)
+		return nil, fmt.Errorf(`nlp.LoadModel: Unknown filename extension: %q`, name)
 	}
 
 }

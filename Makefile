@@ -27,19 +27,19 @@ clean:
 test:
 	go test ./...
 
-data: data/models/city.json data/models/givenName.json data/models/sn.json data/models/streetName.json
+data: data/models/city.markov.json data/models/givenName.markov.json data/models/sn.markov.json data/models/streetName.markov.json
 
-data/models/city.txt: data/training/city.csv
-	tail -n+2 data/training/city.csv | ./pipeclean train dict > data/models/city.txt
+data/models/city.dict.txt: data/training/city.csv
+	tail -n+2 data/training/city.csv | ./pipeclean train dict > data/models/city.dict.txt
 
-data/models/city.json: Makefile data/models/city.txt
-	cat data/models/city.txt | ./pipeclean train markov:words:5 > data/models/city.json
+data/models/city.markov.json: Makefile data/models/city.dict.txt
+	cat data/models/city.dict.txt | ./pipeclean train markov:words:5 > data/models/city.markov.json
 
-data/models/givenName.json: Makefile data/training/givenName.csv
-	tail -n+2 data/training/givenName.csv | ./pipeclean train markov:words:3 > data/models/givenName.json
+data/models/givenName.markov.json: Makefile data/training/givenName.csv
+	tail -n+2 data/training/givenName.csv | ./pipeclean train markov:words:3 > data/models/givenName.markov.json
 
-data/models/sn.json: Makefile data/training/sn.csv
-	tail -n+2 data/training/sn.csv | ./pipeclean train markov:words:3 > data/models/sn.json
+data/models/sn.markov.json: Makefile data/training/sn.csv
+	tail -n+2 data/training/sn.csv | ./pipeclean train markov:words:3 > data/models/sn.markov.json
 
-data/models/streetName.json: Makefile data/training/streetName.csv
-	tail -n+2 data/training/streetName.csv | ./pipeclean train markov:words:5 > data/models/streetName.json
+data/models/streetName.markov.json: Makefile data/training/streetName.csv
+	tail -n+2 data/training/streetName.csv | ./pipeclean train markov:words:5 > data/models/streetName.markov.json

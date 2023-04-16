@@ -1,8 +1,8 @@
 package nlp
 
 import (
-	"encoding/json"
-	"fmt"
+	"bufio"
+	"bytes"
 	"regexp"
 )
 
@@ -10,44 +10,34 @@ type MatchModel struct {
 	patterns []*regexp.Regexp
 }
 
-type matchModelJSON struct {
-	Type     string   `json:"typ"`
-	Patterns []string `json:"pat"`
-}
-
-const matchModelTypeID = "github.com/xeger/pipeclean/nlp.MatchModel"
-
 func NewMatchModel(patterns []*regexp.Regexp) *MatchModel {
 	return &MatchModel{patterns}
 }
 
-func (m *MatchModel) MarshalJSON() ([]byte, error) {
-	patterns := make([]string, 0, len(m.patterns))
+func (m *MatchModel) MarshalText() ([]byte, error) {
+	buf := new(bytes.Buffer)
 	for _, p := range m.patterns {
-		patterns = append(patterns, p.String())
+		buf.WriteString(p.String())
+		buf.WriteRune('\n')
 	}
-	obj := matchModelJSON{Type: matchModelTypeID, Patterns: patterns}
-	return json.Marshal(obj)
+	return buf.Bytes(), nil
 }
 
-func (m *MatchModel) UnmarshalJSON(b []byte) error {
-	var obj matchModelJSON
-	err := json.Unmarshal(b, &obj)
-	if err != nil {
-		return err
+func (m *MatchModel) UnmarshalText(b []byte) error {
+	sources := make([]string, 0, 4)
+	scanner := bufio.NewScanner(bytes.NewBuffer(b))
+	for scanner.Scan() {
+		sources = append(sources, scanner.Text())
 	}
-	if obj.Type != matchModelTypeID {
-		return fmt.Errorf("Wrong type; expected %q, got %q", matchModelTypeID, obj.Type)
-	}
-
-	m.patterns = make([]*regexp.Regexp, 0, len(obj.Patterns))
-	for _, p := range obj.Patterns {
-		if r, err := regexp.Compile(p); err != nil {
+	patterns := make([]*regexp.Regexp, 0, len(sources))
+	for i, s := range sources {
+		pat, err := regexp.Compile(s)
+		if err != nil {
 			return err
-		} else {
-			m.patterns = append(m.patterns, r)
 		}
+		patterns[i] = pat
 	}
+	m.patterns = patterns
 	return nil
 }
 
