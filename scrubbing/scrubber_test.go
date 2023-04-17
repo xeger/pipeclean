@@ -13,7 +13,7 @@ func scrub(s string) string {
 }
 
 func scrubSalted(s, salt string) string {
-	return scrubbing.NewScrubber(salt, nil, 0.95).ScrubString(s, "")
+	return scrubbing.NewScrubber(salt, nil, scrubbing.DefaultPolicy()).ScrubString(s, "")
 }
 
 func TestDeepJSON(t *testing.T) {

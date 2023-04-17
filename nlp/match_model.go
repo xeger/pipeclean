@@ -29,7 +29,7 @@ func (m *MatchModel) UnmarshalText(b []byte) error {
 	for scanner.Scan() {
 		sources = append(sources, scanner.Text())
 	}
-	patterns := make([]*regexp.Regexp, 0, len(sources))
+	patterns := make([]*regexp.Regexp, len(sources))
 	for i, s := range sources {
 		pat, err := regexp.Compile(s)
 		if err != nil {

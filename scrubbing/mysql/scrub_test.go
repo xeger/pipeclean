@@ -29,7 +29,7 @@ func scrub(input string) string {
 	writer := bufio.NewWriter(output)
 
 	ctx := mysql.NewScrubContext()
-	scrubber := scrubbing.NewScrubber("", nil, 0.95)
+	scrubber := scrubbing.NewScrubber("", nil, scrubbing.DefaultPolicy())
 	go mysql.ScrubChan(ctx, scrubber, in, out)
 
 	for {

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/xeger/pipeclean/nlp"
 	"github.com/xeger/pipeclean/scrubbing"
-	"github.com/xeger/pipeclean/scrubbing/json"
+	scrubjson "github.com/xeger/pipeclean/scrubbing/json"
 	"github.com/xeger/pipeclean/scrubbing/mysql"
 )
 
@@ -29,7 +30,7 @@ type scrubFunc func(*scrubbing.Scrubber, <-chan string, chan<- string)
 func init() {
 	scrubCmd.PersistentFlags().Float64VarP(&confidence, "confidence", "c", 0.5, "minimum probability to consider a match")
 	scrubCmd.PersistentFlags().StringSliceVarP(&context, "context", "x", []string{}, "extra files to parse for improved accuracy")
-	scrubCmd.PersistentFlags().IntVarP(&parallelism, "parallelism", "p", runtime.NumCPU(), "lines to scrub at once")
+	scrubCmd.PersistentFlags().StringVarP(&policy, "policy", "p", "", "policy file (JSON)")
 	scrubCmd.PersistentFlags().StringVarP(&salt, "salt", "s", "", "static diversifier for PRNG seed")
 }
 
@@ -65,24 +66,39 @@ func scrub(cmd *cobra.Command, args []string) {
 		panic(err.Error())
 	}
 
+	var pol *scrubbing.Policy
+	if policy != "" {
+		data, err := ioutil.ReadFile(policy)
+		if err != nil {
+			panic(err.Error())
+		}
+		err = json.Unmarshal(data, pol)
+		if err != nil {
+			panic(err.Error())
+		}
+	} else {
+		pol = scrubbing.DefaultPolicy()
+	}
+
 	switch mode {
 	case "json":
-		scrubJson(models)
+		scrubJson(models, pol)
 	case "mysql":
-		scrubMysql(models)
+		scrubMysql(models, pol)
 	default:
 		// should never happen (cobra should validate)
 		panic("unknown mode: " + mode)
 	}
 }
 
-func scrubJson(models []nlp.Model) {
-	sc := scrubbing.NewScrubber(salt, models, confidence)
+func scrubJson(models []nlp.Model, pol *scrubbing.Policy) {
+	sc := scrubbing.NewScrubber(salt, models, pol)
 	// TODO: parallelize JSON scrubbing (but not parsing)
-	json.Scrub(sc, os.Stdin, os.Stdout)
+	scrubjson.Scrub(sc, os.Stdin, os.Stdout)
 }
 
-func scrubMysql(models []nlp.Model) {
+func scrubMysql(models []nlp.Model, pol *scrubbing.Policy) {
+	// Scan any context provided
 	ctx := mysql.NewScrubContext()
 	for _, file := range context {
 		sql, err := ioutil.ReadFile(file)
@@ -91,14 +107,15 @@ func scrubMysql(models []nlp.Model) {
 		}
 		ctx.Scan(string(sql))
 	}
-	N := parallelism
+
+	N := runtime.NumCPU()
 
 	in := make([]chan string, N)
 	out := make([]chan string, N)
 	for i := 0; i < N; i++ {
 		in[i] = make(chan string)
 		out[i] = make(chan string)
-		sc := scrubbing.NewScrubber(salt, models, confidence)
+		sc := scrubbing.NewScrubber(salt, models, pol)
 		go mysql.ScrubChan(ctx, sc, in[i], out[i])
 	}
 	drain := func(to int) {

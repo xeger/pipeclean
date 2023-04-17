@@ -30,15 +30,16 @@ var reZip = regexp.MustCompile(`^\d{5}(-\d{4})?$`)
 type Scrubber struct {
 	confidence float64
 	models     []nlp.Model
+	policy     *Policy
 	salt       string
 	shallow    bool
 }
 
-func NewScrubber(salt string, models []nlp.Model, confidence float64) *Scrubber {
+func NewScrubber(salt string, models []nlp.Model, policy *Policy) *Scrubber {
 	return &Scrubber{
-		confidence: confidence,
-		models:     models,
-		salt:       salt,
+		models: models,
+		policy: policy,
+		salt:   salt,
 	}
 }
 
