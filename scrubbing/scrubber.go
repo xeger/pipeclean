@@ -28,11 +28,10 @@ var reTelUS = regexp.MustCompile(`^\(?\d{3}\)?[ -]?\d{3}-?\d{4}$`)
 var reZip = regexp.MustCompile(`^\d{5}(-\d{4})?$`)
 
 type Scrubber struct {
-	confidence float64
-	models     []nlp.Model
-	policy     *Policy
-	salt       string
-	shallow    bool
+	models  []nlp.Model
+	policy  *Policy
+	salt    string
+	shallow bool
 }
 
 func NewScrubber(salt string, models []nlp.Model, policy *Policy) *Scrubber {
@@ -74,50 +73,18 @@ func (sc *Scrubber) ScrubData(data any, field string) any {
 
 // ScrubString masks recognized PII in a string, preserving other values.
 func (sc *Scrubber) ScrubString(s, field string) string {
-	// TODO: use sc.Policy to determine whether to mask or erase.
-	// Mask well-known numeric formats and abbreviations.
-	if reTelUS.MatchString(s) {
-		dash := strings.Index(s, "-")
-		if dash < 0 {
-			return sc.mask(s)
-		}
-		area, num := s[:dash], s[dash+1:]
-		area = sc.mask(area)
-		num = sc.mask(num)
-		return fmt.Sprintf("%s-%s", area, num)
-	} else if reZip.MatchString(s) {
-		return sc.mask(s)
-	}
-
-	// Mask email addresses w/ consistent local and domain parts.
-	if len(s) < 1024 && strings.Index(s, " ") == -1 {
-		if a, _ := mail.ParseAddress(s); a != nil {
-			at := strings.Index(a.Address, "@")
-			local, domain := a.Address[:at], a.Address[at+1:]
-			dot := strings.LastIndex(domain, ".")
-			if dot > 0 {
-				tld := domain[dot+1:]
-				prefix := domain[0:dot]
-				return fmt.Sprintf("%s@%s.%s", sc.mask(local), sc.mask(prefix), tld)
-			} else {
-				return sc.mask(domain)
+	if field != "" {
+		if disposition := sc.policy.MatchFieldName(field); disposition != "" {
+			switch disposition {
+			case "erase":
+				return ""
+			case "mask":
+				return sc.mask(s)
 			}
 		}
 	}
 
-	// Mask each part of short phrases of 2-10 words that contain a numeric component.
-	if reContainsNum.MatchString(s) {
-		spaces := strings.Count(s, " ")
-		if spaces > 1 && spaces < 10 {
-			words := strings.Fields(s)
-			for i, w := range words {
-				words[i] = sc.ScrubSubstring(w, field)
-			}
-			return strings.Join(words, " ")
-		}
-	}
-
-	// Handle deep scrubbing (e.g. JSON/YAML in string).
+	// Handle deep scrubbing if data is well-formed JSON/YAML.
 	if !sc.shallow {
 		var data any
 
@@ -147,15 +114,18 @@ func (sc *Scrubber) ScrubString(s, field string) string {
 	}
 
 	// Match against all models.
-	for _, model := range sc.models {
-		if model.Recognize(s) >= sc.confidence {
-			if generator, ok := model.(nlp.Generator); ok {
-				return nlp.ToSameCase(generator.Generate(s), s)
-			} else {
-				return sc.mask(s)
+	// TODO: fix me after fixing model loading
+	/*
+		for _, model := range sc.models {
+			if model.Recognize(s) >= sc.confidence {
+				if generator, ok := model.(nlp.Generator); ok {
+					return nlp.ToSameCase(generator.Generate(s), s)
+				} else {
+					return sc.mask(s)
+				}
 			}
 		}
-	}
+	*/
 
 	return s
 }
@@ -170,11 +140,35 @@ func (sc *Scrubber) ScrubSubstring(s, field string) string {
 	return sc.ScrubString(s, field)
 }
 
-// Mask scrambles letters and numbers, preserving case, punctuation, and special characters.
+// Mask scrambles the numeric or alphabetic characters in a string, preserving
+// other characters (punctuation, etc) and preserving the length of the string.
+//
+// Some special-case logic handles the following cases:
+//   - email addresses: TLD is left unmasked
+func (sc *Scrubber) mask(s string) string {
+	if len(s) < 1024 && strings.Index(s, " ") == -1 {
+		if a, _ := mail.ParseAddress(s); a != nil {
+			at := strings.Index(a.Address, "@")
+			local, domain := a.Address[:at], a.Address[at+1:]
+			dot := strings.LastIndex(domain, ".")
+			if dot > 0 {
+				tld := domain[dot+1:]
+				prefix := domain[0:dot]
+				return fmt.Sprintf("%s@%s.%s", sc.maskWord(local), sc.maskWord(prefix), tld)
+			} else {
+				return sc.maskWord(domain)
+			}
+		}
+	}
+
+	return sc.maskWord(s)
+}
+
+// MaskWord scrambles letters and numbers, preserving case, punctuation, and special characters.
 // As a special case, preserves 0 (and thus the distribution of zero to nonzero).
 // Always returns the same output for a given input.
-func (sc *Scrubber) mask(s string) string {
-	rand := rand.NewRand(nlp.Clean(s))
+func (sc *Scrubber) maskWord(s string) string {
+	rand := rand.NewRand(nlp.CleanToken(s))
 	h := fnv.New64a()
 	if sc.salt != "" {
 		h.Write([]byte(sc.salt))

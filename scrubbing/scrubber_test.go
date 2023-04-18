@@ -8,18 +8,18 @@ import (
 
 const salt = "github.com/xeger/pipeclean/scrubbing"
 
-func scrub(s string) string {
-	return scrubSalted(s, "")
+func scrub(s, field string) string {
+	return scrubSalted(s, field, "")
 }
 
-func scrubSalted(s, salt string) string {
-	return scrubbing.NewScrubber(salt, nil, scrubbing.DefaultPolicy()).ScrubString(s, "")
+func scrubSalted(s, field, salt string) string {
+	return scrubbing.NewScrubber(salt, nil, scrubbing.DefaultPolicy()).ScrubString(s, field)
 }
 
 func TestDeepJSON(t *testing.T) {
 	in := `{"email":"joe@foo.com"}`
 	exp := `{"email":"jyv@iws.com"}`
-	if got := scrub(in); got != exp {
+	if got := scrub(in, "someJsonField"); got != exp {
 		t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
 	}
 }
@@ -27,7 +27,7 @@ func TestDeepJSON(t *testing.T) {
 func _skip_TestDeepYAML(t *testing.T) {
 	in := "email: joe@foo.com\n"
 	exp := "email: jyv@iws.com\n"
-	if got := scrub(in); got != exp {
+	if got := scrub(in, "someYamlField"); got != exp {
 		t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
 	}
 
@@ -38,7 +38,7 @@ func _skip_TestDeepYAML(t *testing.T) {
 	in2 := `--- !ruby/hash
 email: joe@foo.com
 `
-	if got2 := scrub(in2); got2 != exp {
+	if got2 := scrub(in2, "someYamlField"); got2 != exp {
 		t.Errorf(`scrub(%q) = %q, want %q`, in2, got2, exp)
 	}
 }
@@ -49,62 +49,25 @@ func TestEmail(t *testing.T) {
 		"gophers@google.com": "hruhlic@mzovvt.com",
 	}
 	for in, exp := range cases {
-		if got := scrub(in); got != exp {
+		if got := scrub(in, "email"); got != exp {
 			t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
 		}
 	}
 }
 
 func TestNumerics(t *testing.T) {
-	if got := scrub("74"); got != "74" {
+	if got := scrub("74", "someField"); got != "74" {
 		t.Errorf(`scrub(%q) = %q, want unchanged`, "74", got)
-	}
-}
-
-func TestStreetAddress(t *testing.T) {
-	cases := map[string]string{
-		"100 Cloverdale Ln": "300 Cloverdale Ln",
-		"23846 Maybach Cir": "87624 Maybach Cir",
-	}
-	for in, exp := range cases {
-		if got := scrub(in); got != exp {
-			t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
-		}
-	}
-}
-
-func TestStreetSuffix(t *testing.T) {
-	suffixes := []string{
-		"Ave",
-		"Ave.",
-		"Avenue",
-		"Blvd",
-		"Blvd.",
-		"Boulevard",
-		"Cir",
-		"Cir.",
-		"Circle",
-		"Dr",
-		"Dr.",
-		"Drive",
-		"Wy",
-		"Wy.",
-		"Way",
-	}
-	for _, suffix := range suffixes {
-		if got := scrub(suffix); got != suffix {
-			t.Errorf(`scrub(%q) = %q, want unchanged`, suffix, got)
-		}
 	}
 }
 
 func TestTelUS(t *testing.T) {
 	cases := map[string]string{
-		"805-555-1212":   "705-231-9867",
-		"(805) 555-1212": "(902) 418-6892",
+		"805-555-1212":   "606-245-3192",
+		"(805) 555-1212": "(606) 245-3192",
 	}
 	for in, exp := range cases {
-		if got := scrub(in); got != exp {
+		if got := scrub(in, "phone"); got != exp {
 			t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
 		}
 	}

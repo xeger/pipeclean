@@ -3,7 +3,6 @@ package mysql_test
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -20,7 +19,7 @@ func read(t *testing.T, name string) string {
 	return string(data)
 }
 
-func scrub(input string) string {
+func scrub(ctx *mysql.ScrubContext, input string) string {
 	reader := bufio.NewReader(bytes.NewBufferString(input))
 	in := make(chan string)
 
@@ -28,7 +27,6 @@ func scrub(input string) string {
 	output := bytes.NewBuffer(make([]byte, 0, len(input)))
 	writer := bufio.NewWriter(output)
 
-	ctx := mysql.NewScrubContext()
 	scrubber := scrubbing.NewScrubber("", nil, scrubbing.DefaultPolicy())
 	go mysql.ScrubChan(ctx, scrubber, in, out)
 
@@ -46,13 +44,14 @@ func scrub(input string) string {
 
 	writer.Flush()
 	outputString := output.String()
-	fmt.Printf("----BEGIN SCRUB OUTPUT----\n%s\n----END SCRUB OUTPUT----\n", outputString)
+	// Uncomment me for verbose debug output
+	// fmt.Printf("----BEGIN SCRUB OUTPUT----\n%s\n----END SCRUB OUTPUT----\n", outputString)
 	return outputString
 }
 
 func TestCreateTables(t *testing.T) {
 	input := read(t, "create_tables.sql")
-	output := scrub(input)
+	output := scrub(mysql.NewScrubContext(), input)
 
 	if strings.Index(output, "DROP TABLE IF EXISTS") < 0 {
 		t.Errorf("DROP TABLE statement is missing")
@@ -64,7 +63,7 @@ func TestCreateTables(t *testing.T) {
 
 func TestInsertNamed(t *testing.T) {
 	input := read(t, "insert-named.sql")
-	output := scrub(input)
+	output := scrub(mysql.NewScrubContext(), input)
 
 	if strings.Index(output, "LOCK TABLES") < 0 {
 		t.Errorf("LOCK TABLES statement is missing")
@@ -79,13 +78,19 @@ func TestInsertNamed(t *testing.T) {
 
 func TestInsertPositional(t *testing.T) {
 	input := read(t, "insert-positional.sql")
-	output := scrub(input)
+
+	ctx := mysql.NewScrubContext()
+	if err := ctx.Scan(input); err != nil {
+		t.Errorf("Scan failed: %s", err)
+	}
+
+	output := scrub(ctx, input)
 
 	if strings.Index(output, "LOCK TABLES") < 0 {
 		t.Errorf("LOCK TABLES statement is missing")
 	}
 	if strings.Index(output, "INSERT INTO `emails` VALUES (1,'t@hjyemwg.com'),(2,'p@hjyemwg.com');") < 0 {
-		t.Errorf("INSERT statement not properly sanitized:\n----BEGIN SQL----\n%s\n----END SQL----\n", output)
+		t.Errorf("INSERT statement not properly sanitized")
 	}
 	if strings.Index(output, "UNLOCK TABLES") < 0 {
 		t.Errorf("UNLOCK TABLES statement is missing")
