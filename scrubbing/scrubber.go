@@ -48,7 +48,10 @@ func NewScrubber(salt string, models map[string]nlp.Model, policy *Policy) *Scru
 // It returns true for base64 encoded values since they are opaque and cannot be scrubbed;
 // it's safest to remove them from the stream entirely.
 func (sc *Scrubber) EraseString(s, field string) bool {
-	return reBase64.MatchString(s)
+	if disposition := sc.policy.MatchFieldName(field); disposition != "" {
+		return disposition.Action() == "erase"
+	}
+	return false
 }
 
 // ScrubData recursively scrubs maps and arrays in-place.
@@ -75,11 +78,23 @@ func (sc *Scrubber) ScrubData(data any, field string) any {
 func (sc *Scrubber) ScrubString(s, field string) string {
 	if field != "" {
 		if disposition := sc.policy.MatchFieldName(field); disposition != "" {
-			switch disposition {
+			switch disposition.Action() {
 			case "erase":
 				return ""
 			case "mask":
 				return sc.mask(s)
+			case "generate":
+				if model := sc.models[disposition.Parameter()]; model != nil {
+					if generator, ok := model.(nlp.Generator); ok {
+						return nlp.ToSameCase(generator.Generate(s), s)
+					}
+				} else {
+					// should never happen if Policy has been properly validated
+					panic("unknown model name for generate action: " + disposition.Action())
+				}
+			default:
+				// should never happen if Policy has been properly validated
+				panic("unknown policy action: " + disposition.Action())
 			}
 		}
 	}

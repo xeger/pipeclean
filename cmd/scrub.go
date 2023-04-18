@@ -70,12 +70,16 @@ func scrub(cmd *cobra.Command, args []string) {
 		if err != nil {
 			panic(err.Error())
 		}
+		pol = new(scrubbing.Policy)
 		err = json.Unmarshal(data, pol)
 		if err != nil {
 			panic(err.Error())
 		}
 	} else {
 		pol = scrubbing.DefaultPolicy()
+	}
+	if err := pol.Validate(models); err != nil {
+		panic("invalid policy: " + err.Error())
 	}
 
 	switch mode {

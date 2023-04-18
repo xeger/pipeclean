@@ -1,8 +1,6 @@
 package mysql
 
 import (
-	"fmt"
-
 	"github.com/pingcap/tidb/parser"
 )
 
@@ -22,7 +20,6 @@ func (sc *ScrubContext) Scan(sql string) error {
 	for _, in := range stmts {
 		siv.ScanStatement(in)
 	}
-	fmt.Printf(">>> %v\n", sc.TableColumns)
 	return nil
 }
 

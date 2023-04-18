@@ -1,7 +1,7 @@
 .PHONY: benchmark bin clean default test
 
 default:
-	cat data/sql/input.sql | ./pipeclean -m mysql scrub data/models
+	cat data/sql/input.sql | ./pipeclean -m mysql -p data/policy.json -x data/sql/schema.sql scrub data/models
 
 bin: bin/pipeclean-darwin-amd64 bin/pipeclean-darwin-arm64 bin/pipeclean-linux-amd64 bin/pipeclean-linux-arm64
 
