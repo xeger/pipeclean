@@ -74,6 +74,7 @@ func (sc *Scrubber) ScrubData(data any, field string) any {
 
 // ScrubString masks recognized PII in a string, preserving other values.
 func (sc *Scrubber) ScrubString(s, field string) string {
+	// TODO: use sc.Policy to determine whether to mask or erase.
 	// Mask well-known numeric formats and abbreviations.
 	if reTelUS.MatchString(s) {
 		dash := strings.Index(s, "-")
