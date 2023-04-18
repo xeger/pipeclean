@@ -34,8 +34,8 @@ func init() {
 	scrubCmd.PersistentFlags().StringVarP(&salt, "salt", "s", "", "static diversifier for PRNG seed")
 }
 
-func loadModels(paths []string) ([]nlp.Model, error) {
-	result := make([]nlp.Model, 0)
+func loadModels(paths []string) (map[string]nlp.Model, error) {
+	result := make(map[string]nlp.Model, 0)
 
 	for _, path := range paths {
 		fi, err := os.Stat(path)
@@ -47,13 +47,11 @@ func loadModels(paths []string) ([]nlp.Model, error) {
 			if err != nil {
 				return nil, err
 			}
-			result = append(result, dirResult...)
-		} else {
-			model, err := nlp.LoadModel(path)
-			if err != nil {
-				return nil, err
+			for k, v := range dirResult {
+				result[k] = v
 			}
-			result = append(result, model)
+		} else {
+			panic("not implemented: load single file")
 		}
 	}
 
@@ -91,13 +89,13 @@ func scrub(cmd *cobra.Command, args []string) {
 	}
 }
 
-func scrubJson(models []nlp.Model, pol *scrubbing.Policy) {
+func scrubJson(models map[string]nlp.Model, pol *scrubbing.Policy) {
 	sc := scrubbing.NewScrubber(salt, models, pol)
 	// TODO: parallelize JSON scrubbing (but not parsing)
 	scrubjson.Scrub(sc, os.Stdin, os.Stdout)
 }
 
-func scrubMysql(models []nlp.Model, pol *scrubbing.Policy) {
+func scrubMysql(models map[string]nlp.Model, pol *scrubbing.Policy) {
 	// Scan any context provided
 	ctx := mysql.NewScrubContext()
 	for _, file := range context {

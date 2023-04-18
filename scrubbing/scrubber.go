@@ -28,13 +28,13 @@ var reTelUS = regexp.MustCompile(`^\(?\d{3}\)?[ -]?\d{3}-?\d{4}$`)
 var reZip = regexp.MustCompile(`^\d{5}(-\d{4})?$`)
 
 type Scrubber struct {
-	models  []nlp.Model
+	models  map[string]nlp.Model
 	policy  *Policy
 	salt    string
 	shallow bool
 }
 
-func NewScrubber(salt string, models []nlp.Model, policy *Policy) *Scrubber {
+func NewScrubber(salt string, models map[string]nlp.Model, policy *Policy) *Scrubber {
 	return &Scrubber{
 		models: models,
 		policy: policy,
