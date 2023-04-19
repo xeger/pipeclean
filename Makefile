@@ -1,7 +1,8 @@
 .PHONY: benchmark bin clean default test
+DATA=testdata
 
 default:
-	cat data/sql/input.sql | ./pipeclean -m mysql -p data/policy.json -x data/sql/schema.sql scrub data/models
+	cat $(DATA)/sql/input.sql | ./pipeclean -c $(DATA)/config.json -m mysql -x $(DATA)/sql/schema.sql scrub $(DATA)/models
 
 bin: bin/pipeclean-darwin-amd64 bin/pipeclean-darwin-arm64 bin/pipeclean-linux-amd64 bin/pipeclean-linux-arm64
 
@@ -27,16 +28,16 @@ clean:
 test:
 	go test ./...
 
-data: data/models/city.markov.json data/models/givenName.markov.json data/models/sn.markov.json data/models/streetName.markov.json
+testdata: $(DATA)/models/city.markov.json $(DATA)/models/givenName.markov.json $(DATA)/models/sn.markov.json $(DATA)/models/streetName.markov.json
 
-data/models/city.markov.json: Makefile data/training/city.csv
-	tail -n+2 data/training/city.csv | ./pipeclean train markov:words:5 > data/models/city.markov.json
+$(DATA)/models/city.markov.json: Makefile $(DATA)/training/city.csv
+	tail -n+2 data/training/city.csv | ./pipeclean train markov:words:5 > $(DATA)/models/city.markov.json
 
-data/models/givenName.markov.json: Makefile data/training/givenName.csv
-	tail -n+2 data/training/givenName.csv | ./pipeclean train markov:words:5 > data/models/givenName.markov.json
+$(DATA)/models/givenName.markov.json: Makefile $(DATA)/training/givenName.csv
+	tail -n+2 data/training/givenName.csv | ./pipeclean train markov:words:5 > $(DATA)/models/givenName.markov.json
 
-data/models/sn.markov.json: Makefile data/training/sn.csv
-	tail -n+2 data/training/sn.csv | ./pipeclean train markov:words:5 > data/models/sn.markov.json
+$(DATA)/models/sn.markov.json: Makefile $(DATA)/training/sn.csv
+	tail -n+2 $(DATA)/training/sn.csv | ./pipeclean train markov:words:5 > $(DATA)/models/sn.markov.json
 
-data/models/streetName.markov.json: Makefile data/training/streetName.csv
-	tail -n+2 data/training/streetName.csv | ./pipeclean train markov:words:5 > data/models/streetName.markov.json
+$(DATA)/models/streetName.markov.json: Makefile $(DATA)/training/streetName.csv
+	tail -n+2 $(DATA)/training/streetName.csv | ./pipeclean train markov:words:5 > $(DATA)/models/streetName.markov.json

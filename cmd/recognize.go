@@ -22,7 +22,7 @@ Prints input lines that match the model.`,
 )
 
 func init() {
-	recognizeCmd.PersistentFlags().Float64VarP(&confidence, "confidence", "c", 0.5, "minimum probability to consider a match")
+	recognizeCmd.PersistentFlags().Float64VarP(&confidenceFlag, "confidence", "c", 0.5, "minimum probability to consider a match")
 }
 
 func recognize(cmd *cobra.Command, args []string) {
@@ -46,7 +46,7 @@ func recognize(cmd *cobra.Command, args []string) {
 			break
 		}
 		line = strings.TrimRight(line, "\r\n\t")
-		if model.Recognize(line) >= confidence {
+		if model.Recognize(line) >= confidenceFlag {
 			fmt.Println(line)
 		}
 	}

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -28,10 +27,9 @@ var (
 type scrubFunc func(*scrubbing.Scrubber, <-chan string, chan<- string)
 
 func init() {
-	scrubCmd.PersistentFlags().Float64VarP(&confidence, "confidence", "c", 0.5, "minimum probability to consider a match")
-	scrubCmd.PersistentFlags().StringSliceVarP(&context, "context", "x", []string{}, "extra files to parse for improved accuracy")
-	scrubCmd.PersistentFlags().StringVarP(&policy, "policy", "p", "", "policy file (JSON)")
-	scrubCmd.PersistentFlags().StringVarP(&salt, "salt", "s", "", "static diversifier for PRNG seed")
+	scrubCmd.PersistentFlags().StringVarP(&configFlag, "config", "c", "", "configuration file (JSON)")
+	scrubCmd.PersistentFlags().StringSliceVarP(&contextFlag, "context", "x", []string{}, "extra files to parse for improved accuracy")
+	scrubCmd.PersistentFlags().StringVarP(&saltFlag, "salt", "s", "", "static diversifier for PRNG seed")
 }
 
 func loadModels(paths []string) (map[string]nlp.Model, error) {
@@ -64,37 +62,32 @@ func scrub(cmd *cobra.Command, args []string) {
 		panic(err.Error())
 	}
 
-	var pol *scrubbing.Policy
-	if policy != "" {
-		data, err := ioutil.ReadFile(policy)
+	var cfg *Config
+	if configFlag != "" {
+		cfg, err = NewConfigFile(configFlag)
 		if err != nil {
-			panic(err.Error())
-		}
-		pol = new(scrubbing.Policy)
-		err = json.Unmarshal(data, pol)
-		if err != nil {
-			panic(err.Error())
+			panic("malformed config:" + err.Error())
 		}
 	} else {
-		pol = scrubbing.DefaultPolicy()
+		cfg = DefaultConfig()
 	}
-	if err := pol.Validate(models); err != nil {
-		panic("invalid policy: " + err.Error())
+	if err := cfg.Validate(models); err != nil {
+		panic("invalid config: " + err.Error())
 	}
 
-	switch mode {
+	switch modeFlag {
 	case "json":
-		scrubJson(models, pol)
+		scrubJson(models, cfg.Scrubbing)
 	case "mysql":
-		scrubMysql(models, pol)
+		scrubMysql(models, cfg.Scrubbing)
 	default:
 		// should never happen (cobra should validate)
-		panic("unknown mode: " + mode)
+		panic("unknown mode: " + modeFlag)
 	}
 }
 
 func scrubJson(models map[string]nlp.Model, pol *scrubbing.Policy) {
-	sc := scrubbing.NewScrubber(salt, models, pol)
+	sc := scrubbing.NewScrubber(saltFlag, models, pol)
 	// TODO: parallelize JSON scrubbing (but not parsing)
 	scrubjson.Scrub(sc, os.Stdin, os.Stdout)
 }
@@ -102,7 +95,7 @@ func scrubJson(models map[string]nlp.Model, pol *scrubbing.Policy) {
 func scrubMysql(models map[string]nlp.Model, pol *scrubbing.Policy) {
 	// Scan any context provided
 	ctx := mysql.NewScrubContext()
-	for _, file := range context {
+	for _, file := range contextFlag {
 		sql, err := ioutil.ReadFile(file)
 		if err != nil {
 			panic(err.Error())
@@ -117,7 +110,7 @@ func scrubMysql(models map[string]nlp.Model, pol *scrubbing.Policy) {
 	for i := 0; i < N; i++ {
 		in[i] = make(chan string)
 		out[i] = make(chan string)
-		sc := scrubbing.NewScrubber(salt, models, pol)
+		sc := scrubbing.NewScrubber(saltFlag, models, pol)
 		go mysql.ScrubChan(ctx, sc, in[i], out[i])
 	}
 	drain := func(to int) {

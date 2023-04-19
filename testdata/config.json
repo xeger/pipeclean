@@ -1,0 +1,33 @@
+{
+  "models": {
+    "markov": {
+      "city": {
+        "delim": "words",
+        "order": 5
+      },
+      "givenName": {
+        "delim": "words",
+        "order": 5
+      },
+      "sn": {
+        "delim": "words",
+        "order": 5
+      },
+      "streetName": {
+        "delim": "words",
+        "order": 5
+      }
+    }
+  },
+  "scrubbing": {
+    "fieldname": {
+      "city": "generate(city)",
+      "email": "mask",
+      "first_name": "generate(givenName)",
+      "last_name": "generate(sn)",
+      "phone": "mask",
+      "street": "generate(streetName)",
+      "zip": "mask"
+    }
+  }
+}

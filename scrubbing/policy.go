@@ -42,7 +42,6 @@ func (p Policy) MatchFieldName(fieldName string) Disposition {
 
 // Validate checks that the policy is internally consistent.
 func (p Policy) Validate(models map[string]nlp.Model) error {
-	fmt.Printf(">>> %v\n", models)
 	for fn, d := range p.FieldName {
 		switch d.Action() {
 		case "erase", "mask":

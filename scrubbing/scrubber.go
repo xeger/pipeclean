@@ -129,7 +129,7 @@ func (sc *Scrubber) ScrubString(s, field string) string {
 	}
 
 	// Match against all models.
-	// TODO: fix me after fixing model loading
+	// TODO: fix me after fixing model loading & exploring heuristics
 	/*
 		for _, model := range sc.models {
 			if model.Recognize(s) >= sc.confidence {

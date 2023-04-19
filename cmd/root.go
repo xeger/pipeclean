@@ -15,7 +15,7 @@ var (
 )
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&mode, "mode", "m", "", "data format (json, mysql, etc)")
+	rootCmd.PersistentFlags().StringVarP(&modeFlag, "mode", "m", "", "data format (json, mysql, etc)")
 	rootCmd.MarkFlagRequired("mode")
 	rootCmd.AddCommand(generateCmd)
 	rootCmd.AddCommand(recognizeCmd)
