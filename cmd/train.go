@@ -15,8 +15,9 @@ import (
 var (
 	trainCmd = &cobra.Command{
 		Use:   "train",
-		Short: "Build a natural-language model",
-		Long: `Parses words/phrases from stdin, one per line.
+		Short: "Train",
+		Long: `Trains an individual model using text input.
+Parses words/phrases from stdin, one per line.
 Prints a JSON representation of the model to stdout.`,
 		Run: train,
 	}

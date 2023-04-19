@@ -14,7 +14,7 @@ import (
 var (
 	recognizeCmd = &cobra.Command{
 		Use:   "recognize",
-		Short: "Test a model against input lines",
+		Short: "Recognize",
 		Long: `Parses words/phrases from stdin, one per line.
 Prints input lines that match the model.`,
 		Run: recognize,

@@ -19,7 +19,7 @@ var (
 	scrubCmd = &cobra.Command{
 		Use:   "scrub",
 		Short: "Scrub",
-		Long:  "Mask or remove sensitive data",
+		Long:  "Masks sensitive data from stdin. Prints results to stdout.",
 		Run:   scrub,
 	}
 )

@@ -14,7 +14,7 @@ var (
 	generateCmd = &cobra.Command{
 		Use:   "generate",
 		Short: "Generate",
-		Long:  `Generate random text from a model.`,
+		Long:  `Generates ten example texts from a model.`,
 		Run:   generate,
 	}
 )
