@@ -1,0 +1,3 @@
+- replace panics with proper fatal errors
+- warning/error reporting mechanism
+- Heuristic policy (e.g. base64): input model --(confidence)--> disposition

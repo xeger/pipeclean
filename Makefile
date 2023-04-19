@@ -21,8 +21,8 @@ benchmark:
 	time cat data/sql/benchmark.sql | ./pipeclean -m mysql scrub data/models > data/sql/benchmark-output.sql
 
 clean:
-	rm -Rf bin
-	rm -Rf data/models/*
+	cd bin ; rm -Rf `git check-ignore *`
+	cd data/models ; rm -Rf `git check-ignore *`
 
 test:
 	go test ./...
@@ -30,13 +30,13 @@ test:
 data: data/models/city.markov.json data/models/givenName.markov.json data/models/sn.markov.json data/models/streetName.markov.json
 
 data/models/city.markov.json: Makefile data/training/city.csv
-	tail -n+2 data/training/city.csv | ./pipeclean train markov:words:3 > data/models/city.markov.json
+	tail -n+2 data/training/city.csv | ./pipeclean train markov:words:5 > data/models/city.markov.json
 
 data/models/givenName.markov.json: Makefile data/training/givenName.csv
-	tail -n+2 data/training/givenName.csv | ./pipeclean train markov:words:3 > data/models/givenName.markov.json
+	tail -n+2 data/training/givenName.csv | ./pipeclean train markov:words:5 > data/models/givenName.markov.json
 
 data/models/sn.markov.json: Makefile data/training/sn.csv
-	tail -n+2 data/training/sn.csv | ./pipeclean train markov:words:3 > data/models/sn.markov.json
+	tail -n+2 data/training/sn.csv | ./pipeclean train markov:words:5 > data/models/sn.markov.json
 
 data/models/streetName.markov.json: Makefile data/training/streetName.csv
 	tail -n+2 data/training/streetName.csv | ./pipeclean train markov:words:5 > data/models/streetName.markov.json
