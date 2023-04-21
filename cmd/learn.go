@@ -8,9 +8,9 @@ import (
 	"runtime"
 
 	"github.com/spf13/cobra"
+	"github.com/xeger/pipeclean/format/mysql"
 	"github.com/xeger/pipeclean/nlp"
 	"github.com/xeger/pipeclean/scrubbing"
-	"github.com/xeger/pipeclean/scrubbing/mysql"
 )
 
 // Used for flags.

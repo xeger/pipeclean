@@ -8,10 +8,10 @@ import (
 	"runtime"
 
 	"github.com/spf13/cobra"
+	scrubjson "github.com/xeger/pipeclean/format/json"
+	"github.com/xeger/pipeclean/format/mysql"
 	"github.com/xeger/pipeclean/nlp"
 	"github.com/xeger/pipeclean/scrubbing"
-	scrubjson "github.com/xeger/pipeclean/scrubbing/json"
-	"github.com/xeger/pipeclean/scrubbing/mysql"
 )
 
 // Used for flags.

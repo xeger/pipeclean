@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/xeger/pipeclean/format/mysql"
 	"github.com/xeger/pipeclean/scrubbing"
-	"github.com/xeger/pipeclean/scrubbing/mysql"
 )
 
 func read(t *testing.T, name string) string {

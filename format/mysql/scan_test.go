@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/xeger/pipeclean/scrubbing/mysql"
+	"github.com/xeger/pipeclean/format/mysql"
 )
 
 func scan(input string) *mysql.ScrubContext {
