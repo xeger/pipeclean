@@ -7,8 +7,8 @@ import (
 	"github.com/xeger/pipeclean/format/mysql"
 )
 
-func scan(input string) *mysql.ScrubContext {
-	ctx := mysql.NewScrubContext()
+func scan(input string) *mysql.Context {
+	ctx := mysql.NewContext()
 	ctx.Scan(input)
 	return ctx
 }

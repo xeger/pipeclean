@@ -25,7 +25,7 @@ func (is insertState) ColumnName() string {
 }
 
 type scrubVisitor struct {
-	ctx      *ScrubContext
+	ctx      *Context
 	scrubber *scrubbing.Scrubber
 	insert   *insertState
 }

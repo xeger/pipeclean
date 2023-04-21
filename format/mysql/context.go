@@ -1,16 +1,19 @@
 package mysql
 
 import (
+	"context"
+
 	"github.com/pingcap/tidb/parser"
 )
 
-// ScrubContext accumulates information about the structure of input data
+// Context accumulates information about the structure of input data
 // which can later be used to scrub the same data.
-type ScrubContext struct {
+type Context struct {
+	context.Context
 	TableColumns map[string][]string
 }
 
-func (sc *ScrubContext) Scan(sql string) error {
+func (sc *Context) Scan(sql string) error {
 	p := parser.New()
 	stmts, _, err := p.Parse(sql, "", "")
 	if err != nil {
@@ -23,8 +26,9 @@ func (sc *ScrubContext) Scan(sql string) error {
 	return nil
 }
 
-func NewScrubContext() *ScrubContext {
-	return &ScrubContext{
+func NewContext() *Context {
+	return &Context{
+		Context:      context.Background(),
 		TableColumns: make(map[string][]string),
 	}
 }

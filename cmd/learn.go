@@ -69,7 +69,7 @@ func learnJson(models map[string]nlp.Model, pol *scrubbing.Policy) {
 
 func learnMysql(models map[string]nlp.Model, pol *scrubbing.Policy) {
 	// Scan any context provided
-	ctx := mysql.NewScrubContext()
+	ctx := mysql.NewContext()
 	for _, file := range contextFlag {
 		sql, err := ioutil.ReadFile(file)
 		if err != nil {

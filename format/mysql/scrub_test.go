@@ -19,7 +19,7 @@ func read(t *testing.T, name string) string {
 	return string(data)
 }
 
-func scrub(ctx *mysql.ScrubContext, input string) string {
+func scrub(ctx *mysql.Context, input string) string {
 	reader := bufio.NewReader(bytes.NewBufferString(input))
 	in := make(chan string)
 
@@ -51,7 +51,7 @@ func scrub(ctx *mysql.ScrubContext, input string) string {
 
 func TestCreateTables(t *testing.T) {
 	input := read(t, "create_tables.sql")
-	output := scrub(mysql.NewScrubContext(), input)
+	output := scrub(mysql.NewContext(), input)
 
 	if strings.Index(output, "DROP TABLE IF EXISTS") < 0 {
 		t.Errorf("DROP TABLE statement is missing")
@@ -63,7 +63,7 @@ func TestCreateTables(t *testing.T) {
 
 func TestInsertNamed(t *testing.T) {
 	input := read(t, "insert-named.sql")
-	output := scrub(mysql.NewScrubContext(), input)
+	output := scrub(mysql.NewContext(), input)
 
 	if strings.Index(output, "LOCK TABLES") < 0 {
 		t.Errorf("LOCK TABLES statement is missing")
@@ -79,7 +79,7 @@ func TestInsertNamed(t *testing.T) {
 func TestInsertPositional(t *testing.T) {
 	input := read(t, "insert-positional.sql")
 
-	ctx := mysql.NewScrubContext()
+	ctx := mysql.NewContext()
 	if err := ctx.Scan(input); err != nil {
 		t.Errorf("Scan failed: %s", err)
 	}

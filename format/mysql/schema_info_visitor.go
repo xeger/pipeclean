@@ -5,7 +5,7 @@ import (
 )
 
 type schemaInfoVisitor struct {
-	info      *ScrubContext
+	info      *Context
 	columnDef bool
 	tableName string
 }
