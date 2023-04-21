@@ -6,7 +6,7 @@ import (
 	"github.com/xeger/pipeclean/nlp"
 )
 
-func TestDeterminism(t *testing.T) {
+func TestMarkovDeterminism(t *testing.T) {
 	m := nlp.NewMarkovModel(2, " ")
 	m.Train("i like pizza")
 	m.Train("i like tacos")
@@ -18,5 +18,14 @@ func TestDeterminism(t *testing.T) {
 			t.Errorf("Variance detected (%q)", s)
 			break
 		}
+	}
+}
+
+func TestMarkovEmpty(t *testing.T) {
+	m := nlp.NewMarkovModel(5, "")
+
+	s := m.Generate("irrelevant")
+	if s != "" {
+		t.Errorf("Empty model failed to generate empty string (%q)", s)
 	}
 }

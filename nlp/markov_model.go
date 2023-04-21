@@ -54,9 +54,20 @@ func (m *MarkovModel) Generate(seed string) string {
 	}
 	for state[len(state)-1] != gomarkov.EndToken {
 		next, _ := m.chain.GenerateDeterministic(state[(len(state)-order):], rand)
+		if next == "" {
+			break
+		}
 		state = append(state, next)
 	}
-	return strings.Join(state[order:len(state)-1], m.separator)
+
+	// Handle empty models with wacky output
+	start := order
+	end := len(state) - 1
+	if len(state) <= order {
+		start = len(state) - 1
+	}
+
+	return strings.Join(state[start:end], m.separator)
 }
 
 func (m *MarkovModel) Recognize(input string) float64 {
