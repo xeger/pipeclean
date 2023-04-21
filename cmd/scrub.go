@@ -32,30 +32,6 @@ func init() {
 	scrubCmd.PersistentFlags().StringVarP(&saltFlag, "salt", "s", "", "static diversifier for PRNG seed")
 }
 
-func loadModels(paths []string) (map[string]nlp.Model, error) {
-	result := make(map[string]nlp.Model, 0)
-
-	for _, path := range paths {
-		fi, err := os.Stat(path)
-		if err != nil {
-			panic(err.Error())
-		}
-		if fi.IsDir() {
-			dirResult, err := nlp.LoadModels(path)
-			if err != nil {
-				return nil, err
-			}
-			for k, v := range dirResult {
-				result[k] = v
-			}
-		} else {
-			panic("not implemented: load single file")
-		}
-	}
-
-	return result, nil
-}
-
 func scrub(cmd *cobra.Command, args []string) {
 	models, err := loadModels(args)
 	if err != nil {

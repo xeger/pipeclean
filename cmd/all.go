@@ -26,7 +26,7 @@ type MarkovDefinition struct {
 	// Higher order uses more memory but (might!) improve generation accuracy.
 	Order int
 	// Tokenization mode: "sentences" or "words".
-	Token string
+	Delim string
 }
 
 type ModelConfig struct {
@@ -68,4 +68,39 @@ func NewConfigFile(filename string) (*Config, error) {
 
 func (cfg *Config) Validate(models map[string]nlp.Model) error {
 	return cfg.Scrubbing.Validate(models)
+}
+
+func loadModels(paths []string) (map[string]nlp.Model, error) {
+	result := make(map[string]nlp.Model, 0)
+
+	for _, path := range paths {
+		fi, err := os.Stat(path)
+		if err != nil {
+			panic(err.Error())
+		}
+		if fi.IsDir() {
+			dirResult, err := nlp.LoadModels(path)
+			if err != nil {
+				return nil, err
+			}
+			for k, v := range dirResult {
+				result[k] = v
+			}
+		} else {
+			panic("not implemented: load single file")
+		}
+	}
+
+	return result, nil
+}
+
+func saveModels(models map[string]nlp.Model, path string) error {
+	for name, m := range models {
+		err := nlp.SaveModel(m, path, name)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

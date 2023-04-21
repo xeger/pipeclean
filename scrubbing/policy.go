@@ -28,8 +28,8 @@ func DefaultPolicy() *Policy {
 	}
 }
 
-// MatchFieldName returns a disposition ("erase" or "mask") for the given
-// field name if it matches any of the policy's field-name patterns.
+// MatchFieldName returns a Disposition for the given field name
+// if it matches any of the policy's field-name patterns.
 // Otherwise it returns the empty string.
 func (p Policy) MatchFieldName(fieldName string) Disposition {
 	for k, v := range p.FieldName {

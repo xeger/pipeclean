@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bufio"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -48,19 +47,29 @@ func learn(cmd *cobra.Command, args []string) {
 	} else {
 		cfg = DefaultConfig()
 	}
+
+	// Initialize any missing models
+	for name, md := range cfg.Models.Markov {
+		if _, ok := models[name]; !ok {
+			models[name] = nlp.NewMarkovModel(md.Order, md.Delim)
+		}
+	}
+
 	if err := cfg.Validate(models); err != nil {
 		panic("invalid config: " + err.Error())
 	}
 
 	switch modeFlag {
 	case "json":
-		scrubJson(models, cfg.Scrubbing)
+		learnJson(models, cfg.Scrubbing)
 	case "mysql":
-		scrubMysql(models, cfg.Scrubbing)
+		learnMysql(models, cfg.Scrubbing)
 	default:
 		// should never happen (cobra should validate)
 		panic("unknown mode: " + modeFlag)
 	}
+
+	saveModels(models, args[0])
 }
 
 func learnJson(models map[string]nlp.Model, pol *scrubbing.Policy) {
@@ -81,22 +90,13 @@ func learnMysql(models map[string]nlp.Model, pol *scrubbing.Policy) {
 	N := runtime.NumCPU()
 
 	in := make([]chan string, N)
-	out := make([]chan string, N)
 	for i := 0; i < N; i++ {
 		in[i] = make(chan string)
-		out[i] = make(chan string)
-		sc := scrubbing.NewScrubber(saltFlag, models, pol)
-		go mysql.ScrubChan(ctx, sc, in[i], out[i])
-	}
-	drain := func(to int) {
-		for i := 0; i < to; i++ {
-			fmt.Print(<-out[i])
-		}
+		go mysql.LearnChan(ctx, models, pol, in[i])
 	}
 	done := func() {
 		for i := 0; i < N; i++ {
 			close(in[i])
-			close(out[i])
 		}
 	}
 
@@ -109,11 +109,6 @@ func learnMysql(models map[string]nlp.Model, pol *scrubbing.Policy) {
 		}
 
 		in[l] <- line
-		l = (l + 1) % N
-		if l == 0 {
-			drain(N)
-		}
 	}
-	drain(l)
 	done()
 }

@@ -6,24 +6,6 @@ import (
 	"github.com/xeger/pipeclean/scrubbing"
 )
 
-type insertState struct {
-	// Name of the table being inserted into.
-	tableName string
-	// List of column names (explicitly specified in current statement, or inferred from table schema).
-	columnNames []string
-	// Number of ValueExpr seen so far across all rows of current statement.
-	valueIndex int
-}
-
-// ColumnName infers the name of the column to which the next ValueExpr will apply.
-// It returns the empty string if the column name is unknown.
-func (is insertState) ColumnName() string {
-	if len(is.columnNames) == 0 {
-		return ""
-	}
-	return is.columnNames[is.valueIndex%len(is.columnNames)]
-}
-
 type scrubVisitor struct {
 	ctx      *Context
 	scrubber *scrubbing.Scrubber
@@ -59,11 +41,13 @@ func (sv *scrubVisitor) Enter(in ast.Node) (ast.Node, bool) {
 			sv.insert.tableName = st.Name.L
 		}
 	case *ast.ColumnName:
+		// insert column names present in SQL source; accumulate them
 		if sv.insert != nil {
 			sv.insert.columnNames = append(sv.insert.columnNames, st.Name.L)
 		}
 	case *test_driver.ValueExpr:
 		if sv.insert != nil {
+			// column names omitted from SQL source; infer from table schema
 			if sv.insert.valueIndex == 0 && len(sv.insert.columnNames) == 0 {
 				sv.insert.columnNames = sv.ctx.TableColumns[sv.insert.tableName]
 			}
