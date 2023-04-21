@@ -46,16 +46,15 @@ func (lv *learnVisitor) Enter(in ast.Node) (ast.Node, bool) {
 			}()
 			switch st.Kind() {
 			case test_driver.KindString:
-				datum := test_driver.Datum{}
-				d := lv.policy.MatchFieldName(lv.insert.ColumnName())
-				switch d.Action() {
+				disposition := lv.policy.MatchFieldName(lv.insert.ColumnName())
+				switch disposition.Action() {
 				case "generate":
-					model := lv.models[d.Parameter()]
+					model := lv.models[disposition.Parameter()]
 					if model != nil {
-						model.Train(datum.GetString())
+						model.Train(st.Datum.GetString())
 					}
 				}
-				return &test_driver.ValueExpr{Datum: datum}, true
+				return st, true
 			}
 		}
 	}
