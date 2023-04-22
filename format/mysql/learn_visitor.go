@@ -46,7 +46,7 @@ func (lv *learnVisitor) Enter(in ast.Node) (ast.Node, bool) {
 			}()
 			switch st.Kind() {
 			case test_driver.KindString:
-				disposition := lv.policy.MatchFieldName(lv.insert.ColumnName())
+				disposition := lv.policy.MatchFieldName(lv.insert.Names())
 				switch disposition.Action() {
 				case "generate":
 					model := lv.models[disposition.Parameter()]

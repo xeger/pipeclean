@@ -25,7 +25,7 @@ type MarkovDefinition struct {
 	// Lookback memory length for state transition table.
 	// Higher order uses more memory but (might!) improve generation accuracy.
 	Order int
-	// Tokenization mode: "sentences" or "words".
+	// Tokenization mode: " " or "".
 	Delim string
 }
 

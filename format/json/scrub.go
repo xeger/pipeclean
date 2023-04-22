@@ -13,7 +13,7 @@ func Scrub(sc *scrubbing.Scrubber, r io.Reader, w io.Writer) {
 	enc := json.NewEncoder(w)
 	var v any
 	for err := dec.Decode(&v); err == nil; err = dec.Decode(&v) {
-		sc.ScrubData(v, "")
+		sc.ScrubData(v, nil)
 		enc.Encode(v)
 	}
 }

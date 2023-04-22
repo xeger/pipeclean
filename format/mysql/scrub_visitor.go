@@ -58,10 +58,11 @@ func (sv *scrubVisitor) Enter(in ast.Node) (ast.Node, bool) {
 			case test_driver.KindString:
 				datum := test_driver.Datum{}
 				s := st.Datum.GetString()
-				if sv.scrubber.EraseString(s, sv.insert.ColumnName()) {
+				names := sv.insert.Names()
+				if sv.scrubber.EraseString(s, names) {
 					datum.SetNull()
 				} else {
-					datum.SetString(sv.scrubber.ScrubString(s, sv.insert.ColumnName()))
+					datum.SetString(sv.scrubber.ScrubString(s, names))
 				}
 				return &test_driver.ValueExpr{Datum: datum}, true
 			}

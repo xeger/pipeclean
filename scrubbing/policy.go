@@ -31,10 +31,12 @@ func DefaultPolicy() *Policy {
 // MatchFieldName returns a Disposition for the given field name
 // if it matches any of the policy's field-name patterns.
 // Otherwise it returns the empty string.
-func (p Policy) MatchFieldName(fieldName string) Disposition {
+func (p Policy) MatchFieldName(names []string) Disposition {
 	for k, v := range p.FieldName {
-		if strings.Contains(fieldName, k) {
-			return v
+		for _, n := range names {
+			if strings.Contains(n, k) {
+				return v
+			}
 		}
 	}
 	return ""

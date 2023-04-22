@@ -2,20 +2,28 @@
   "models": {
     "markov": {
       "city": {
-        "delim": "words",
-        "order": 5
+        "delim": "",
+        "order": 4
+      },
+      "entityName": {
+        "delim": "",
+        "order": 4
       },
       "givenName": {
-        "delim": "words",
-        "order": 5
+        "delim": "",
+        "order": 4
+      },
+      "investmentName": {
+        "delim": "",
+        "order": 4
       },
       "sn": {
-        "delim": "words",
-        "order": 5
+        "delim": "",
+        "order": 4
       },
       "streetName": {
-        "delim": "words",
-        "order": 5
+        "delim": "",
+        "order": 4
       }
     }
   },
@@ -23,9 +31,12 @@
     "fieldname": {
       "city": "generate(city)",
       "email": "mask",
+      "im_entities.name": "generate(entityName)",
+      "im_funds.name": "generate(investmentName)",
       "first_name": "generate(givenName)",
       "last_name": "generate(sn)",
       "phone": "mask",
+      "postal": "mask",
       "street": "generate(streetName)",
       "zip": "mask"
     }

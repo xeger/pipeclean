@@ -47,26 +47,26 @@ func NewScrubber(salt string, models map[string]nlp.Model, policy *Policy) *Scru
 //
 // It returns true for base64 encoded values since they are opaque and cannot be scrubbed;
 // it's safest to remove them from the stream entirely.
-func (sc *Scrubber) EraseString(s, field string) bool {
-	if disposition := sc.policy.MatchFieldName(field); disposition != "" {
+func (sc *Scrubber) EraseString(s string, names []string) bool {
+	if disposition := sc.policy.MatchFieldName(names); disposition != "" {
 		return disposition.Action() == "erase"
 	}
 	return false
 }
 
 // ScrubData recursively scrubs maps and arrays in-place.
-func (sc *Scrubber) ScrubData(data any, field string) any {
+func (sc *Scrubber) ScrubData(data any, names []string) any {
 	switch v := data.(type) {
 	case string:
-		return sc.ScrubString(v, field)
+		return sc.ScrubString(v, names)
 	case []any:
 		for i, e := range v {
-			v[i] = sc.ScrubData(e, strconv.Itoa(i))
+			v[i] = sc.ScrubData(e, []string{strconv.Itoa(i)})
 		}
 		return v
 	case map[string]any:
 		for k, e := range v {
-			v[k] = sc.ScrubData(e, k)
+			v[k] = sc.ScrubData(e, []string{k})
 		}
 		return v
 	default:
@@ -75,9 +75,10 @@ func (sc *Scrubber) ScrubData(data any, field string) any {
 }
 
 // ScrubString masks recognized PII in a string, preserving other values.
-func (sc *Scrubber) ScrubString(s, field string) string {
-	if field != "" {
-		if disposition := sc.policy.MatchFieldName(field); disposition != "" {
+func (sc *Scrubber) ScrubString(s string, names []string) string {
+	// Match via field name policy
+	if len(names) > 0 {
+		if disposition := sc.policy.MatchFieldName(names); disposition != "" {
 			switch disposition.Action() {
 			case "erase":
 				return ""
@@ -104,7 +105,7 @@ func (sc *Scrubber) ScrubString(s, field string) string {
 		var data any
 
 		if err := json.Unmarshal([]byte(s), &data); err == nil {
-			scrubbed, err := json.Marshal(sc.ScrubData(data, ""))
+			scrubbed, err := json.Marshal(sc.ScrubData(data, nil))
 			if err != nil {
 				panic(err)
 			}
@@ -114,7 +115,7 @@ func (sc *Scrubber) ScrubString(s, field string) string {
 		if err := yaml.Unmarshal([]byte(s), &data); err == nil {
 			switch v := data.(type) {
 			case []any, map[string]any:
-				scrubbed, err := yaml.Marshal(sc.ScrubData(v, ""))
+				scrubbed, err := yaml.Marshal(sc.ScrubData(v, nil))
 				if err != nil {
 					panic(err)
 				}
@@ -128,7 +129,7 @@ func (sc *Scrubber) ScrubString(s, field string) string {
 		}
 	}
 
-	// Match against all models.
+	// Match heuristically
 	// TODO: fix me after fixing model loading & exploring heuristics
 	/*
 		for _, model := range sc.models {
@@ -147,12 +148,12 @@ func (sc *Scrubber) ScrubString(s, field string) string {
 
 // ScrubSubstring performs extra-diligent masking assuming that s is a
 // substring of a larger phrase.
-func (sc *Scrubber) ScrubSubstring(s, field string) string {
+func (sc *Scrubber) ScrubSubstring(s string, names []string) string {
 	if reIntDec.MatchString(s) {
 		return sc.mask(s)
 	}
 
-	return sc.ScrubString(s, field)
+	return sc.ScrubString(s, names)
 }
 
 // Mask scrambles the numeric or alphabetic characters in a string, preserving

@@ -1,5 +1,7 @@
 package mysql
 
+import "fmt"
+
 type insertState struct {
 	// Name of the table being inserted into.
 	tableName string
@@ -9,11 +11,20 @@ type insertState struct {
 	valueIndex int
 }
 
-// ColumnName infers the name of the column to which the next ValueExpr will apply.
-// It returns the empty string if the column name is unknown.
-func (is insertState) ColumnName() string {
-	if len(is.columnNames) == 0 {
-		return ""
+// Names returns a list of column names to which the Next ValueExpr will apply.
+// The list contains 0-3 elements depending on the completeness of the schema
+// information provided in context.
+func (is insertState) Names() []string {
+	names := make([]string, 0, 3)
+	if len(is.tableName) > 0 {
+		colIdx := is.valueIndex % len(is.columnNames)
+		if len(is.columnNames) > 0 {
+			colName := is.columnNames[colIdx]
+			names = append(names, colName)
+			names = append(names, fmt.Sprintf("%s.%s", is.tableName, colName))
+		}
+		names = append(names, fmt.Sprintf("%s.%d", is.tableName, colIdx))
 	}
-	return is.columnNames[is.valueIndex%len(is.columnNames)]
+
+	return names
 }
