@@ -12,22 +12,27 @@ import (
 type MarkovModel struct {
 	chain     gomarkov.Chain
 	separator string
+	lenFreq   map[int]int
+	lenMax    int
 }
 
 type markovModelJSON struct {
 	Separator string         `json:"separator"`
 	Chain     gomarkov.Chain `json:"chain"`
+	LenFreq   map[int]int    `json:"len_freq"`
 }
 
 func NewMarkovModel(order int, separator string) *MarkovModel {
 	return &MarkovModel{
 		chain:     *gomarkov.NewChain(order),
 		separator: separator,
+		lenFreq:   make(map[int]int),
+		lenMax:    0,
 	}
 }
 
 func (m *MarkovModel) MarshalJSON() ([]byte, error) {
-	obj := markovModelJSON{Separator: m.separator, Chain: m.chain}
+	obj := markovModelJSON{Separator: m.separator, Chain: m.chain, LenFreq: m.lenFreq}
 	return json.Marshal(obj)
 }
 
@@ -40,6 +45,15 @@ func (m *MarkovModel) UnmarshalJSON(b []byte) error {
 
 	m.chain = obj.Chain
 	m.separator = obj.Separator
+	m.lenFreq = obj.LenFreq
+
+	m.lenMax = 0
+	for l := range m.lenFreq {
+		if l > m.lenMax {
+			m.lenMax = l
+		}
+	}
+
 	return nil
 }
 
@@ -52,7 +66,7 @@ func (m *MarkovModel) Generate(seed string) string {
 	for i := 0; i < order; i++ {
 		state = append(state, gomarkov.StartToken)
 	}
-	for state[len(state)-1] != gomarkov.EndToken {
+	for state[len(state)-1] != gomarkov.EndToken && len(state) < m.lenMax+order {
 		next, err := m.chain.GenerateDeterministic(state[(len(state)-order):], rand)
 		if err != nil {
 			panic("MarkovModel.Generate: " + err.Error())
@@ -93,4 +107,10 @@ func (m *MarkovModel) Train(input string) {
 	input = Clean(input)
 	tokens := strings.Split(input, m.separator)
 	m.chain.Add(tokens)
+
+	l := len(tokens)
+	m.lenFreq[l]++
+	if l > m.lenMax {
+		m.lenMax = l
+	}
 }
