@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/xeger/pipeclean/cmd/ui"
 	"github.com/xeger/pipeclean/nlp"
 )
 
@@ -24,11 +25,12 @@ Prints a JSON representation of the model to stdout.`,
 )
 
 func showUsageForTrain() {
-	fmt.Fprintln(os.Stderr, "Usage: pipeclean train <modelType>[param1:param2:...]")
-	fmt.Fprintln(os.Stderr, "Examples:")
-	fmt.Fprintln(os.Stderr, "  pipeclean train dict # dictionary-lookup model")
-	fmt.Fprintln(os.Stderr, "  pipeclean train markov:words:5 # markov word model of order 5")
-	fmt.Fprintln(os.Stderr, "  pipeclean train markov:sentences:3 # markov sentence model of order 5")
+	ui.Fatalf("Usage: pipeclean train <modelType>[param1:param2:...]").Hint(
+		"Examples:",
+		"pipeclean train dict # dictionary-lookup model",
+		"pipeclean train markov:words:5 # markov word model of order 5",
+		"pipeclean train markov:sentences:3 # markov sentence model of order 5",
+	)
 }
 
 func train(cmd *cobra.Command, args []string) {

@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 
+	"github.com/xeger/pipeclean/cmd/ui"
 	"github.com/xeger/pipeclean/nlp"
 	"github.com/xeger/pipeclean/scrubbing"
 )
@@ -71,14 +71,12 @@ func (cfg *Config) Validate(models map[string]nlp.Model) error {
 				if err := mm.Validate(mc); err != nil {
 					switch err {
 					case nlp.ErrInvalidModel:
-						fmt.Fprintf(os.Stderr, "Configuration mismatch for Markov model %s.\n", n)
-						fmt.Fprintf(os.Stderr, "  - please delete this model and reinitialize it\n")
+						ui.Fatalf("Configuration mismatch for Markov model %s.\n", n).Hint("please delete this model and reinitialize it")
 					}
 					return err
 				}
 			} else {
-				fmt.Fprintf(os.Stderr, "Type mismatch for model %s (declared as Markov; got %T).\n", n, m)
-				fmt.Fprintf(os.Stderr, "  - please delete this model and reinitialize it\n")
+				ui.Fatalf("Type mismatch for model %s (declared as Markov; got %T).\n", n, m).Hint("please delete this model and reinitialize it")
 				return nlp.ErrInvalidModel
 			}
 		}

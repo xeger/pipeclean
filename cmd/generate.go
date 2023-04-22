@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/xeger/pipeclean/cmd/ui"
 	"github.com/xeger/pipeclean/nlp"
 )
 
@@ -24,8 +25,8 @@ func generate(cmd *cobra.Command, args []string) {
 	if len(args) == 1 {
 		modelFile = args[0]
 	} else {
-		fmt.Fprintln(os.Stderr, "Usage: pipeclean generate <modelFile>")
-		os.Exit(1)
+		ui.Fatalf("Usage: pipeclean generate <modelFile>")
+		os.Exit(int('g'))
 	}
 
 	model, err := nlp.LoadModel(modelFile)
@@ -38,7 +39,7 @@ func generate(cmd *cobra.Command, args []string) {
 			fmt.Println(g.Generate(fmt.Sprintf("%d", rand.Int63())))
 		}
 	} else {
-		fmt.Fprintln(os.Stderr, "Model does not support generation.")
+		ui.Fatalf("Model does not support generation.")
 		os.Exit(1)
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/xeger/pipeclean/cmd/ui"
 	"github.com/xeger/pipeclean/nlp"
 )
 
@@ -30,7 +31,7 @@ func recognize(cmd *cobra.Command, args []string) {
 	if len(args) == 1 {
 		modelFile = args[0]
 	} else {
-		fmt.Fprintln(os.Stderr, "Usage: pipeclean recognize <modelFile>")
+		ui.Fatalf("Usage: pipeclean recognize <modelFile>")
 		os.Exit(1)
 	}
 
