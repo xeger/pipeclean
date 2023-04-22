@@ -9,6 +9,14 @@ import (
 	"github.com/xeger/pipeclean/rand"
 )
 
+type MarkovDefinition struct {
+	// Lookback memory length for state transition table.
+	// Higher order uses more memory but (might!) improve generation accuracy.
+	Order int
+	// Tokenization mode: " " or "".
+	Delim string
+}
+
 type MarkovModel struct {
 	chain     gomarkov.Chain
 	separator string
@@ -113,4 +121,14 @@ func (m *MarkovModel) Train(input string) {
 	if l > m.lenMax {
 		m.lenMax = l
 	}
+}
+
+func (m *MarkovModel) Validate(md MarkovDefinition) error {
+	if m.chain.Order != md.Order {
+		return ErrInvalidModel
+	}
+	if m.separator != md.Delim {
+		return ErrInvalidModel
+	}
+	return nil
 }

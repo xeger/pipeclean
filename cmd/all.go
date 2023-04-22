@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/xeger/pipeclean/nlp"
@@ -13,6 +14,7 @@ import (
 // Helps ensure consistency i.e. if "foo" is a float64 in command A, then
 // it must be a float64 in command B, too.
 var (
+	appendFlag      bool
 	confidenceFlag  float64
 	configFlag      string
 	contextFlag     []string
@@ -21,16 +23,8 @@ var (
 	saltFlag        string
 )
 
-type MarkovDefinition struct {
-	// Lookback memory length for state transition table.
-	// Higher order uses more memory but (might!) improve generation accuracy.
-	Order int
-	// Tokenization mode: " " or "".
-	Delim string
-}
-
 type ModelConfig struct {
-	Markov map[string]MarkovDefinition
+	Markov map[string]nlp.MarkovDefinition
 }
 
 // Config tells pipeclean how to learn from and scrub your data sets.
@@ -67,7 +61,30 @@ func NewConfigFile(filename string) (*Config, error) {
 }
 
 func (cfg *Config) Validate(models map[string]nlp.Model) error {
-	return cfg.Scrubbing.Validate(models)
+	if err := cfg.Scrubbing.Validate(models); err != nil {
+		return err
+	}
+
+	for n, mc := range cfg.Models.Markov {
+		if m := models[n]; m != nil {
+			if mm, ok := m.(*nlp.MarkovModel); ok {
+				if err := mm.Validate(mc); err != nil {
+					switch err {
+					case nlp.ErrInvalidModel:
+						fmt.Fprintf(os.Stderr, "Configuration mismatch for Markov model %s.\n", n)
+						fmt.Fprintf(os.Stderr, "  - please delete this model and reinitialize it\n")
+					}
+					return err
+				}
+			} else {
+				fmt.Fprintf(os.Stderr, "Type mismatch for model %s (declared as Markov; got %T).\n", n, m)
+				fmt.Fprintf(os.Stderr, "  - please delete this model and reinitialize it\n")
+				return nlp.ErrInvalidModel
+			}
+		}
+	}
+
+	return nil
 }
 
 func loadModels(paths []string) (map[string]nlp.Model, error) {

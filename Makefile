@@ -2,7 +2,7 @@
 DATA=testdata
 
 default:
-	@cat $(DATA)/sql/data.sql | ./pipeclean learn -c $(DATA)/config.json -m mysql -x $(DATA)/sql/schema.sql $(DATA)/models
+	@cat $(DATA)/sql/data.sql | ./pipeclean learn -c $(DATA)/config.json -m mysql -r -x $(DATA)/sql/schema.sql $(DATA)/models
 	@cat $(DATA)/sql/data.sql | ./pipeclean scrub -c $(DATA)/config.json -m mysql -x $(DATA)/sql/schema.sql $(DATA)/models
 
 bin: bin/pipeclean-darwin-amd64 bin/pipeclean-darwin-arm64 bin/pipeclean-linux-amd64 bin/pipeclean-linux-arm64
@@ -20,7 +20,7 @@ bin/pipeclean-linux-arm64:
 	env GOOS=linux GOARCH=amd64 go build -o bin/pipeclean-linux-arm64
 
 benchmark:
-	time cat $(DATA)/sql/benchmark.sql | ./pipeclean learn -m mysql -c $(DATA)/config.json -x $(DATA)/sql/schema.sql $(DATA)/models
+	time cat $(DATA)/sql/benchmark.sql | ./pipeclean learn -m mysql -c $(DATA)/config.json -r -x $(DATA)/sql/schema.sql $(DATA)/models
 	time cat $(DATA)/sql/benchmark.sql | ./pipeclean scrub -m mysql -c $(DATA)/config.json -x $(DATA)/sql/schema.sql $(DATA)/models > $(DATA)/sql/benchmark-output.sql
 
 clean:

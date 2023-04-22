@@ -23,19 +23,25 @@ var (
 )
 
 func init() {
+	learnCmd.PersistentFlags().BoolVarP(&appendFlag, "append", "r", false, "load existing models before training (default: overwrite)")
 	learnCmd.PersistentFlags().StringVarP(&configFlag, "config", "c", "", "configuration file (JSON)")
 	learnCmd.PersistentFlags().StringSliceVarP(&contextFlag, "context", "x", []string{}, "extra files to parse for improved accuracy")
 }
 
 func learn(cmd *cobra.Command, args []string) {
+	var err error
+
 	if len(args) != 1 {
 		// TODO better!
 		panic("must pass exactly one directory name for model storage")
 	}
 
-	models, err := loadModels(args)
-	if err != nil {
-		panic(err.Error())
+	models := make(map[string]nlp.Model)
+	if appendFlag {
+		models, err = loadModels(args)
+		if err != nil {
+			panic(err.Error())
+		}
 	}
 
 	var cfg *Config
@@ -55,8 +61,8 @@ func learn(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if err := cfg.Validate(models); err != nil {
-		panic("invalid config: " + err.Error())
+	if err = cfg.Validate(models); err != nil {
+		os.Exit(int('l'))
 	}
 
 	switch modeFlag {
