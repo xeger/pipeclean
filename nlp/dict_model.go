@@ -5,6 +5,9 @@ import (
 	"bytes"
 )
 
+type DictDefinition struct {
+}
+
 type DictModel struct {
 	dict map[string]bool
 }

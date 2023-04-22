@@ -25,8 +25,9 @@ var (
 )
 
 type ModelConfig struct {
-	Dict   *struct{}
+	Dict   *nlp.DictDefinition
 	Markov *nlp.MarkovDefinition
+	Match  *nlp.MatchDefinition
 }
 
 // Validate ensures that the model configuration is valid.
@@ -41,6 +42,9 @@ func (mc ModelConfig) Validate() error {
 		if mc.Markov.Order <= 0 {
 			return fmt.Errorf(`markov order must be >= 1`)
 		}
+	}
+	if mc.Match != nil {
+		subs++
 	}
 
 	switch subs {
@@ -106,8 +110,7 @@ func (cfg *Config) Validate(models map[string]nlp.Model) []error {
 		}
 		if m := models[name]; m != nil {
 			if defn.Dict != nil {
-				if _, ok := m.(*nlp.DictModel); ok {
-				} else {
+				if _, ok := m.(*nlp.DictModel); !ok {
 					ui.Fatalf("Type mismatch for model %s (declared as Dict; got %T).\n", name, m).Hint("please delete this model and reinitialize it")
 					errs = append(errs, nlp.ErrInvalidModel)
 				}
@@ -122,6 +125,11 @@ func (cfg *Config) Validate(models map[string]nlp.Model) []error {
 					}
 				} else {
 					ui.Fatalf("Type mismatch for model %s (declared as Markov; got %T).\n", name, m).Hint("please delete this model and reinitialize it")
+					errs = append(errs, nlp.ErrInvalidModel)
+				}
+			} else if defn.Match != nil {
+				if _, ok := m.(*nlp.MatchModel); !ok {
+					ui.Fatalf("Type mismatch for model %s (declared as Match; got %T).\n", name, m).Hint("please delete this model and reinitialize it")
 					errs = append(errs, nlp.ErrInvalidModel)
 				}
 			}

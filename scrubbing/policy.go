@@ -82,27 +82,27 @@ func (p Policy) MatchFieldName(names []string) Disposition {
 func (p Policy) Validate(models map[string]nlp.Model) []error {
 	var errs []error
 
-	for _, rule := range p.FieldName {
+	for i, rule := range p.FieldName {
 		switch rule.Out.Action() {
 		case "erase", "mask":
 			continue
 		case "generate":
 			model := models[rule.Out.Parameter()]
 			if model == nil {
-				errs = append(errs, fmt.Errorf("unrecognized model %q for fieldname %q", rule.Out.Parameter(), rule.In))
+				errs = append(errs, fmt.Errorf("unrecognized model %q for fieldname[%d]", rule.Out.Parameter(), i))
 			} else if _, ok := model.(nlp.Generator); !ok {
-				errs = append(errs, fmt.Errorf("model %q for fieldname %q is not a generator", rule.Out.Parameter(), rule.In))
+				errs = append(errs, fmt.Errorf("model %q for fieldname[%d] is not a generator", rule.Out.Parameter(), i))
 			}
 		default:
-			errs = append(errs, fmt.Errorf("unknown policy action %q for fieldname %q", rule.Out.Action(), rule.In))
+			errs = append(errs, fmt.Errorf("unknown policy action %q for fieldname[%d]", rule.Out.Action(), i))
 		}
 	}
 
-	for _, rule := range p.Heuristic {
+	for i, rule := range p.Heuristic {
 
 		modelIn := models[rule.In]
 		if modelIn == nil {
-			errs = append(errs, fmt.Errorf("unrecognized model %q for heuristic %q", rule.In, rule.Out))
+			errs = append(errs, fmt.Errorf("unrecognized model %q for heuristic[%d]", rule.In, i))
 		}
 		switch rule.Out.Action() {
 		case "erase", "mask":
@@ -110,12 +110,12 @@ func (p Policy) Validate(models map[string]nlp.Model) []error {
 		case "generate":
 			modelOut := models[rule.Out.Parameter()]
 			if modelOut == nil {
-				errs = append(errs, fmt.Errorf("unrecognized output model %q for heuristic %q", rule.Out.Parameter(), rule.In))
+				errs = append(errs, fmt.Errorf("unrecognized output model %q for heuristic[%d]", rule.Out.Parameter(), i))
 			} else if _, ok := modelOut.(nlp.Generator); !ok {
-				errs = append(errs, fmt.Errorf("model %q for heuristic %q is not a generator", rule.Out.Parameter(), rule.In))
+				errs = append(errs, fmt.Errorf("model %q for heuristic[%d] is not a generator", rule.Out.Parameter(), i))
 			}
 		default:
-			errs = append(errs, fmt.Errorf("unknown policy action %q for heuristic %q", rule.Out.Action(), rule.In))
+			errs = append(errs, fmt.Errorf("unknown policy action %q for heuristic[%d]", rule.Out.Action(), i))
 		}
 	}
 

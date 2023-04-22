@@ -6,6 +6,8 @@ import (
 	"regexp"
 )
 
+type MatchDefinition struct{}
+
 type MatchModel struct {
 	patterns []*regexp.Regexp
 }
