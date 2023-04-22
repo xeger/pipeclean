@@ -1,3 +1,10 @@
-- replace panics with proper fatal errors
-- warning/error reporting mechanism
-- Heuristic policy (e.g. base64): input model --(confidence)--> disposition
+1. introduce "erase" policy
+    - details
+    - base64 (MatchModel; heuristic?)
+    - etc...
+1. parse CSV string columns & sanitize the bits
+1. Heuristic policy (e.g. base64):
+    - input model --(confidence)--> disposition
+    - match model + markov model
+1. replace panics with proper fatal errors
+1. warning/error reporting mechanism
