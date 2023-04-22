@@ -53,15 +53,14 @@ func (m *MarkovModel) Generate(seed string) string {
 		state = append(state, gomarkov.StartToken)
 	}
 	for state[len(state)-1] != gomarkov.EndToken {
-		next, _ := m.chain.GenerateDeterministic(state[(len(state)-order):], rand)
-		// Weird case: model is empty and apparently generates empty strings, not even an end token.
-		if next == "" {
-			next = gomarkov.EndToken
+		next, err := m.chain.GenerateDeterministic(state[(len(state)-order):], rand)
+		if err != nil {
+			panic("MarkovModel.Generate: " + err.Error())
 		}
 		state = append(state, next)
 	}
 
-	// Handle empty models with wacky output (e.g.)
+	// Handle empty models or erroneous output
 	start := order
 	end := len(state) - 1
 	if len(state) <= order {
