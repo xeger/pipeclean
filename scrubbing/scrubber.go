@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/xeger/pipeclean/cmd/ui"
 	"github.com/xeger/pipeclean/nlp"
 	"github.com/xeger/pipeclean/rand"
 	"gopkg.in/yaml.v3"
@@ -76,31 +77,35 @@ func (sc *Scrubber) ScrubData(data any, names []string) any {
 
 // ScrubString masks recognized PII in a string, preserving other values.
 func (sc *Scrubber) ScrubString(s string, names []string) string {
+	handle := func(disposition Disposition) string {
+		switch disposition.Action() {
+		case "erase":
+			return ""
+		case "mask":
+			return sc.mask(s)
+		case "generate":
+			if model := sc.models[disposition.Parameter()]; model != nil {
+				if generator, ok := model.(nlp.Generator); ok {
+					return nlp.ToSameCase(generator.Generate(s), s)
+				}
+			} else {
+				// should never happen if Policy has been properly validated
+				panic("unknown model name for generate action: " + disposition.Action())
+			}
+		}
+		// should never happen if Policy has been properly validated
+		ui.ExitBug("unknown policy action: " + disposition.Action())
+		return ""
+	}
+
 	// Match via field name policy
 	if len(names) > 0 {
 		if disposition := sc.policy.MatchFieldName(names); disposition != "" {
-			switch disposition.Action() {
-			case "erase":
-				return ""
-			case "mask":
-				return sc.mask(s)
-			case "generate":
-				if model := sc.models[disposition.Parameter()]; model != nil {
-					if generator, ok := model.(nlp.Generator); ok {
-						return nlp.ToSameCase(generator.Generate(s), s)
-					}
-				} else {
-					// should never happen if Policy has been properly validated
-					panic("unknown model name for generate action: " + disposition.Action())
-				}
-			default:
-				// should never happen if Policy has been properly validated
-				panic("unknown policy action: " + disposition.Action())
-			}
+			return handle(disposition)
 		}
 	}
 
-	// Handle deep scrubbing if data is well-formed JSON/YAML.
+	// Handle deep scrubbing of encapsulated data formats
 	if !sc.shallow {
 		var data any
 
@@ -130,30 +135,15 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 	}
 
 	// Match heuristically
-	// TODO: fix me after fixing model loading & exploring heuristics
-	/*
-		for _, model := range sc.models {
-			if model.Recognize(s) >= sc.confidence {
-				if generator, ok := model.(nlp.Generator); ok {
-					return nlp.ToSameCase(generator.Generate(s), s)
-				} else {
-					return sc.mask(s)
-				}
-			}
+	for modelName, disposition := range sc.policy.Heuristic {
+		model := sc.models[modelName]
+		// TODO: tune confidence
+		if model.Recognize(s) >= 0.95 {
+			return handle(disposition)
 		}
-	*/
-
-	return s
-}
-
-// ScrubSubstring performs extra-diligent masking assuming that s is a
-// substring of a larger phrase.
-func (sc *Scrubber) ScrubSubstring(s string, names []string) string {
-	if reIntDec.MatchString(s) {
-		return sc.mask(s)
 	}
 
-	return sc.ScrubString(s, names)
+	return s
 }
 
 // Mask scrambles the numeric or alphabetic characters in a string, preserving

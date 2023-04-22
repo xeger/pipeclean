@@ -1,8 +1,10 @@
 package scrubbing_test
 
 import (
+	"regexp"
 	"testing"
 
+	"github.com/xeger/pipeclean/nlp"
 	"github.com/xeger/pipeclean/scrubbing"
 )
 
@@ -24,25 +26,6 @@ func TestDeepJSON(t *testing.T) {
 	}
 }
 
-func _skip_TestDeepYAML(t *testing.T) {
-	in := "email: joe@foo.com\n"
-	exp := "email: jyv@iws.com\n"
-	if got := scrub(in, "someYamlField"); got != exp {
-		t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
-	}
-
-	// BUG: YAML metadata & document structure are not preserved
-	// TODO: investigate yaml.Node & build a scrubbing/yaml package if needed
-	//  - preserves comments
-	//  - hopefully has a way to preserve type markers
-	in2 := `--- !ruby/hash
-email: joe@foo.com
-`
-	if got2 := scrub(in2, "someYamlField"); got2 != exp {
-		t.Errorf(`scrub(%q) = %q, want %q`, in2, got2, exp)
-	}
-}
-
 func TestEmail(t *testing.T) {
 	cases := map[string]string{
 		"joe@foo.com":        "jyv@iws.com",
@@ -51,6 +34,25 @@ func TestEmail(t *testing.T) {
 	for in, exp := range cases {
 		if got := scrub(in, "email"); got != exp {
 			t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
+		}
+	}
+}
+
+func TestHeuristic(t *testing.T) {
+	models := map[string]nlp.Model{
+		"fruit": nlp.NewMatchModel([]*regexp.Regexp{regexp.MustCompile(`apple|orange`)}),
+	}
+	pol := &scrubbing.Policy{
+		Heuristic: map[string]scrubbing.Disposition{"fruit": "erase"},
+	}
+	tests := map[string]string{
+		"apple": "",
+		"horse": "horse",
+	}
+	for in, want := range tests {
+		scrubber := scrubbing.NewScrubber(salt, models, pol)
+		if got := scrubber.ScrubString(in, nil); got != want {
+			t.Errorf(`scrub(%q) = %q, want %q`, in, got, want)
 		}
 	}
 }

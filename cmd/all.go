@@ -60,9 +60,15 @@ func NewConfigFile(filename string) (*Config, error) {
 	return cfg, nil
 }
 
-func (cfg *Config) Validate(models map[string]nlp.Model) error {
-	if err := cfg.Scrubbing.Validate(models); err != nil {
-		return err
+func (cfg *Config) Validate(models map[string]nlp.Model) []error {
+	var errs []error
+
+	if scrubbingErrors := cfg.Scrubbing.Validate(models); scrubbingErrors != nil {
+		h := ui.Fatalf("Invalid scrubbing policy.")
+		for _, e := range scrubbingErrors {
+			h.Hint(e.Error())
+		}
+		errs = append(errs, scrubbingErrors...)
 	}
 
 	for n, mc := range cfg.Models.Markov {
@@ -73,16 +79,16 @@ func (cfg *Config) Validate(models map[string]nlp.Model) error {
 					case nlp.ErrInvalidModel:
 						ui.Fatalf("Configuration mismatch for Markov model %s.\n", n).Hint("please delete this model and reinitialize it")
 					}
-					return err
+					errs = append(errs, err)
 				}
 			} else {
 				ui.Fatalf("Type mismatch for model %s (declared as Markov; got %T).\n", n, m).Hint("please delete this model and reinitialize it")
-				return nlp.ErrInvalidModel
+				errs = append(errs, nlp.ErrInvalidModel)
 			}
 		}
 	}
 
-	return nil
+	return errs
 }
 
 func loadModels(paths []string) (map[string]nlp.Model, error) {

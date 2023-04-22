@@ -39,6 +39,9 @@
       "postal": "mask",
       "street": "generate(streetName)",
       "zip": "mask"
+    },
+    "heuristic": {
+      "base64": "erase"
     }
   }
 }

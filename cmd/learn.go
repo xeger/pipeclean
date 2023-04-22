@@ -64,7 +64,7 @@ func learn(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if err = cfg.Validate(models); err != nil {
+	if errs := cfg.Validate(models); errs != nil {
 		ui.Exit('>')
 	}
 

@@ -44,13 +44,14 @@ func scrub(cmd *cobra.Command, args []string) {
 	if configFlag != "" {
 		cfg, err = NewConfigFile(configFlag)
 		if err != nil {
-			panic("malformed config:" + err.Error())
+			ui.Fatal(err)
+			ui.Exit('>')
 		}
 	} else {
 		cfg = DefaultConfig()
 	}
-	if err := cfg.Validate(models); err != nil {
-		panic("invalid config: " + err.Error())
+	if errs := cfg.Validate(models); errs != nil {
+		ui.Exit('>') // cfg calls ui on its own
 	}
 
 	switch modeFlag {
