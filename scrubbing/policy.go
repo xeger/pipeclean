@@ -2,38 +2,10 @@ package scrubbing
 
 import (
 	"fmt"
-	"strings"
+	"regexp"
 
 	"github.com/xeger/pipeclean/nlp"
 )
-
-// FieldNameRule describes a scrubbing policy based on the name of a field.
-// and irrespective of its value.
-type FieldNameRule struct {
-	// In is a field-name matching pattern to test whether this rule applied.
-	In string
-	// Out describes what to do when a value satisfies this rule.
-	Out Disposition
-}
-
-// HeuristicRule describes a scrubbing policy based on a value irrespective
-// of its field name.
-type HeuristicRule struct {
-	// In is the name of a model that will be used to recognize values.
-	In string
-	// P is the p-value threshold for model recognition for this rule to apply.
-	// When matching a value, models output a confidence on the interval [0..1];
-	// this is compared to 1.0 - P and if the result is greater, the rule is applied.
-	//
-	// In other words:
-	//  P = 0.0  --> model must be 100% confident (the default value)
-	//  P = 0.05 --> model must be 95% confident
-	//  and so on
-
-	P float64
-	// Out describes what to do when a value satisfies this rule.
-	Out Disposition
-}
 
 // Policy reflects human decisionmaking about which values should be scrubbed
 // based on their field name.
@@ -54,12 +26,9 @@ type Policy struct {
 func DefaultPolicy() *Policy {
 	return &Policy{
 		FieldName: []FieldNameRule{
-			{In: "email", Out: "mask"},
-			{In: "phone", Out: "mask"},
-			{In: "postcode", Out: "mask"},
-			{In: "postal_code", Out: "mask"},
-			{In: "postalcode", Out: "mask"},
-			{In: "zip", Out: "mask"},
+			{In: regexp.MustCompile("email"), Out: "mask"},
+			{In: regexp.MustCompile("phone"), Out: "mask"},
+			{In: regexp.MustCompile("(post(al)?_?code)|zip"), Out: "mask"},
 		},
 	}
 }
@@ -70,7 +39,7 @@ func DefaultPolicy() *Policy {
 func (p Policy) MatchFieldName(names []string) Disposition {
 	for _, rule := range p.FieldName {
 		for _, n := range names {
-			if strings.Contains(n, rule.In) {
+			if rule.In.MatchString(n) {
 				return rule.Out
 			}
 		}
