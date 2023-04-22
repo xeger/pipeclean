@@ -58,9 +58,13 @@ func learn(cmd *cobra.Command, args []string) {
 	}
 
 	// Initialize any missing models
-	for name, md := range cfg.Models.Markov {
+	for name, md := range cfg.Models {
 		if _, ok := models[name]; !ok {
-			models[name] = nlp.NewMarkovModel(md.Order, md.Delim)
+			if md.Dict != nil {
+				models[name] = nlp.NewDictModel()
+			} else if md.Markov != nil {
+				models[name] = nlp.NewMarkovModel(md.Markov.Order, md.Markov.Delim)
+			}
 		}
 	}
 

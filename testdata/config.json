@@ -1,47 +1,84 @@
 {
   "models": {
-    "markov": {
-      "city": {
-        "delim": "",
+    "city": {
+      "markov": {
         "order": 4
-      },
-      "entityName": {
-        "delim": "",
+      }
+    },
+    "entityName": {
+      "markov": {
         "order": 2
-      },
-      "givenName": {
-        "delim": "",
+      }
+    },
+    "givenName": {
+      "markov": {
         "order": 4
-      },
-      "investmentName": {
-        "delim": "",
+      }
+    },
+    "investmentName": {
+      "markov": {
         "order": 4
-      },
-      "sn": {
-        "delim": "",
+      }
+    },
+    "sn": {
+      "markov": {
         "order": 4
-      },
-      "streetName": {
-        "delim": "",
+      }
+    },
+    "streetName": {
+      "markov": {
         "order": 4
       }
     }
   },
   "scrubbing": {
-    "fieldname": {
-      "city": "generate(city)",
-      "email": "mask",
-      "im_entities.name": "generate(entityName)",
-      "im_funds.name": "generate(investmentName)",
-      "first_name": "generate(givenName)",
-      "last_name": "generate(sn)",
-      "phone": "mask",
-      "postal": "mask",
-      "street": "generate(streetName)",
-      "zip": "mask"
-    },
-    "heuristic": {
-      "base64": "erase"
-    }
+    "fieldname": [
+      {
+        "in": "city",
+        "out": "generate(city)"
+      },
+      {
+        "in": "email",
+        "out": "mask"
+      },
+      {
+        "in": "im_entities.name",
+        "out": "generate(entityName)"
+      },
+      {
+        "in": "im_funds.name",
+        "out": "generate(investmentName)"
+      },
+      {
+        "in": "first_name",
+        "out": "generate(givenName)"
+      },
+      {
+        "in": "last_name",
+        "out": "generate(sn)"
+      },
+      {
+        "in": "phone",
+        "out": "mask"
+      },
+      {
+        "in": "postal",
+        "out": "mask"
+      },
+      {
+        "in": "street",
+        "out": "generate(streetName)"
+      },
+      {
+        "in": "zip",
+        "out": "mask"
+      }
+    ],
+    "heuristic": [
+      {
+        "in": "base64",
+        "out": "erase"
+      }
+    ]
   }
 }

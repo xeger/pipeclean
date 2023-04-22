@@ -135,11 +135,10 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 	}
 
 	// Match heuristically
-	for modelName, disposition := range sc.policy.Heuristic {
-		model := sc.models[modelName]
-		// TODO: tune confidence
-		if model.Recognize(s) >= 0.95 {
-			return handle(disposition)
+	for _, rule := range sc.policy.Heuristic {
+		model := sc.models[rule.In]
+		if model.Recognize(s) >= (1.0 - rule.P) {
+			return handle(rule.Out)
 		}
 	}
 

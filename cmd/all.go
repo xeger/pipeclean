@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/xeger/pipeclean/cmd/ui"
@@ -24,7 +25,32 @@ var (
 )
 
 type ModelConfig struct {
-	Markov map[string]nlp.MarkovDefinition
+	Dict   *struct{}
+	Markov *nlp.MarkovDefinition
+}
+
+// Validate ensures that the model configuration is valid.
+func (mc ModelConfig) Validate() error {
+	subs := 0
+
+	if mc.Dict != nil {
+		subs++
+	}
+	if mc.Markov != nil {
+		subs++
+		if mc.Markov.Order <= 0 {
+			return fmt.Errorf(`markov order must be >= 1`)
+		}
+	}
+
+	switch subs {
+	case 0:
+		return fmt.Errorf(`unknown type`)
+	case 1:
+		return nil
+	default:
+		return fmt.Errorf(`ambiguous type`)
+	}
 }
 
 // Config tells pipeclean how to learn from and scrub your data sets.
@@ -35,13 +61,16 @@ type ModelConfig struct {
 // flags are much more malleable and vary at the whim of the user
 // and the use case.
 type Config struct {
-	Models    ModelConfig
+	// Models describes the models used to learn and scrub.
+	// Key: model name
+	// Value: model configuration
+	Models    map[string]ModelConfig
 	Scrubbing *scrubbing.Policy
 }
 
 func DefaultConfig() *Config {
 	return &Config{
-		Models:    ModelConfig{},
+		Models:    map[string]ModelConfig{},
 		Scrubbing: scrubbing.DefaultPolicy(),
 	}
 }
@@ -71,19 +100,30 @@ func (cfg *Config) Validate(models map[string]nlp.Model) []error {
 		errs = append(errs, scrubbingErrors...)
 	}
 
-	for n, mc := range cfg.Models.Markov {
-		if m := models[n]; m != nil {
-			if mm, ok := m.(*nlp.MarkovModel); ok {
-				if err := mm.Validate(mc); err != nil {
-					switch err {
-					case nlp.ErrInvalidModel:
-						ui.Fatalf("Configuration mismatch for Markov model %s.\n", n).Hint("please delete this model and reinitialize it")
-					}
-					errs = append(errs, err)
+	for name, defn := range cfg.Models {
+		if err := defn.Validate(); err != nil {
+			errs = append(errs, err)
+		}
+		if m := models[name]; m != nil {
+			if defn.Dict != nil {
+				if _, ok := m.(*nlp.DictModel); ok {
+				} else {
+					ui.Fatalf("Type mismatch for model %s (declared as Dict; got %T).\n", name, m).Hint("please delete this model and reinitialize it")
+					errs = append(errs, nlp.ErrInvalidModel)
 				}
-			} else {
-				ui.Fatalf("Type mismatch for model %s (declared as Markov; got %T).\n", n, m).Hint("please delete this model and reinitialize it")
-				errs = append(errs, nlp.ErrInvalidModel)
+			} else if defn.Markov != nil {
+				if mt, ok := m.(*nlp.MarkovModel); ok {
+					if err := mt.Validate(*defn.Markov); err != nil {
+						switch err {
+						case nlp.ErrInvalidModel:
+							ui.Fatalf("Configuration mismatch for Markov model %s.\n", name).Hint("please delete this model and reinitialize it")
+						}
+						errs = append(errs, err)
+					}
+				} else {
+					ui.Fatalf("Type mismatch for model %s (declared as Markov; got %T).\n", name, m).Hint("please delete this model and reinitialize it")
+					errs = append(errs, nlp.ErrInvalidModel)
+				}
 			}
 		}
 	}

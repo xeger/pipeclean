@@ -43,7 +43,9 @@ func TestHeuristic(t *testing.T) {
 		"fruit": nlp.NewMatchModel([]*regexp.Regexp{regexp.MustCompile(`apple|orange`)}),
 	}
 	pol := &scrubbing.Policy{
-		Heuristic: map[string]scrubbing.Disposition{"fruit": "erase"},
+		Heuristic: []scrubbing.HeuristicRule{
+			{In: "fruit", Out: "erase"},
+		},
 	}
 	tests := map[string]string{
 		"apple": "",
