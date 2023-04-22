@@ -15,13 +15,13 @@ type scrubVisitor struct {
 // ScrubStatement sensitive data from an SQL AST.
 // May modify the AST in-place (and return it), or may return a derived AST.
 // Returns nil if the entire statement should be omitted from output.
-func (sv *scrubVisitor) ScrubStatement(stmt ast.StmtNode) (ast.StmtNode, bool) {
+func (v *scrubVisitor) ScrubStatement(stmt ast.StmtNode) (ast.StmtNode, bool) {
 	switch stmt.(type) {
 	case *ast.InsertStmt:
 		if doInserts {
-			sv.insert = &insertState{}
-			stmt.Accept(sv)
-			sv.insert = nil
+			v.insert = &insertState{}
+			stmt.Accept(v)
+			v.insert = nil
 			return stmt, true
 		} else {
 			return nil, true
@@ -34,35 +34,35 @@ func (sv *scrubVisitor) ScrubStatement(stmt ast.StmtNode) (ast.StmtNode, bool) {
 	}
 }
 
-func (sv *scrubVisitor) Enter(in ast.Node) (ast.Node, bool) {
+func (v *scrubVisitor) Enter(in ast.Node) (ast.Node, bool) {
 	switch st := in.(type) {
 	case *ast.TableName:
-		if sv.insert != nil {
-			sv.insert.tableName = st.Name.L
+		if v.insert != nil {
+			v.insert.tableName = st.Name.L
 		}
 	case *ast.ColumnName:
 		// insert column names present in SQL source; accumulate them
-		if sv.insert != nil {
-			sv.insert.columnNames = append(sv.insert.columnNames, st.Name.L)
+		if v.insert != nil {
+			v.insert.columnNames = append(v.insert.columnNames, st.Name.L)
 		}
 	case *test_driver.ValueExpr:
-		if sv.insert != nil {
+		if v.insert != nil {
 			// column names omitted from SQL source; infer from table schema
-			if sv.insert.valueIndex == 0 && len(sv.insert.columnNames) == 0 {
-				sv.insert.columnNames = sv.ctx.TableColumns[sv.insert.tableName]
+			if v.insert.valueIndex == 0 && len(v.insert.columnNames) == 0 {
+				v.insert.columnNames = v.ctx.TableColumns[v.insert.tableName]
 			}
 			defer func() {
-				sv.insert.valueIndex++
+				v.insert.valueIndex++
 			}()
 			switch st.Kind() {
 			case test_driver.KindString:
 				datum := test_driver.Datum{}
 				s := st.Datum.GetString()
-				names := sv.insert.Names()
-				if sv.scrubber.EraseString(s, names) {
+				names := v.insert.Names()
+				if v.scrubber.EraseString(s, names) {
 					datum.SetNull()
 				} else {
-					datum.SetString(sv.scrubber.ScrubString(s, names))
+					datum.SetString(v.scrubber.ScrubString(s, names))
 				}
 				return &test_driver.ValueExpr{Datum: datum}, true
 			}
@@ -71,6 +71,6 @@ func (sv *scrubVisitor) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-func (sc *scrubVisitor) Leave(in ast.Node) (ast.Node, bool) {
+func (v *scrubVisitor) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

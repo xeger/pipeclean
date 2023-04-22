@@ -7,7 +7,11 @@ import (
 	"github.com/xeger/pipeclean/scrubbing"
 )
 
-// Scrub sanitizes a single line, which may contain multiple SQL statements.
+// Scrub sanitizes a JSON document, which may be part of a stream of documents
+// a sub-object of some larger document.
+//
+// The caller is responsible for parsing streams into sub-objects and must pass
+// only well-formed, complete documents to Scrub.
 func Scrub(sc *scrubbing.Scrubber, r io.Reader, w io.Writer) {
 	dec := json.NewDecoder(r)
 	enc := json.NewEncoder(w)

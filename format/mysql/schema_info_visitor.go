@@ -10,35 +10,35 @@ type schemaInfoVisitor struct {
 	tableName string
 }
 
-func (siv *schemaInfoVisitor) ScanStatement(stmt ast.StmtNode) {
+func (v *schemaInfoVisitor) ScanStatement(stmt ast.StmtNode) {
 	switch stmt.(type) {
 	case *ast.CreateTableStmt:
-		siv.tableName = ""
-		stmt.Accept(siv)
+		v.tableName = ""
+		stmt.Accept(v)
 	}
 }
 
-func (siv *schemaInfoVisitor) Enter(in ast.Node) (ast.Node, bool) {
+func (v *schemaInfoVisitor) Enter(in ast.Node) (ast.Node, bool) {
 	switch st := in.(type) {
 	case *ast.TableName:
-		siv.tableName = st.Name.L
-		if siv.info.TableColumns[siv.tableName] == nil {
-			siv.info.TableColumns[siv.tableName] = make([]string, 0, 32)
+		v.tableName = st.Name.L
+		if v.info.TableColumns[v.tableName] == nil {
+			v.info.TableColumns[v.tableName] = make([]string, 0, 32)
 		}
 	case *ast.ColumnDef:
-		siv.columnDef = true
+		v.columnDef = true
 	case *ast.ColumnName:
-		if siv.columnDef {
-			siv.info.TableColumns[siv.tableName] = append(siv.info.TableColumns[siv.tableName], st.Name.L)
+		if v.columnDef {
+			v.info.TableColumns[v.tableName] = append(v.info.TableColumns[v.tableName], st.Name.L)
 		}
 	}
 	return in, false
 }
 
-func (siv *schemaInfoVisitor) Leave(in ast.Node) (ast.Node, bool) {
+func (v *schemaInfoVisitor) Leave(in ast.Node) (ast.Node, bool) {
 	switch in.(type) {
 	case *ast.ColumnDef:
-		siv.columnDef = false
+		v.columnDef = false
 	}
 	return in, true
 }
