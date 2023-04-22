@@ -8,6 +8,7 @@ import (
 	"runtime"
 
 	"github.com/spf13/cobra"
+	"github.com/xeger/pipeclean/cmd/ui"
 	scrubjson "github.com/xeger/pipeclean/format/json"
 	"github.com/xeger/pipeclean/format/mysql"
 	"github.com/xeger/pipeclean/nlp"
@@ -35,7 +36,8 @@ func init() {
 func scrub(cmd *cobra.Command, args []string) {
 	models, err := loadModels(args)
 	if err != nil {
-		panic(err.Error())
+		ui.Fatal(err)
+		ui.Exit('>')
 	}
 
 	var cfg *Config

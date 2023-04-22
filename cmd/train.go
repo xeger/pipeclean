@@ -54,7 +54,7 @@ func train(cmd *cobra.Command, args []string) {
 		}
 	} else {
 		showUsageForTrain()
-		os.Exit(1)
+		ui.Exit('-')
 	}
 
 	switch modelType {
@@ -66,7 +66,7 @@ func train(cmd *cobra.Command, args []string) {
 			markovSep = ""
 		default:
 			showUsageForTrain()
-			os.Exit(1)
+			ui.Exit('-')
 		}
 
 		reader := bufio.NewReader(os.Stdin)

@@ -32,12 +32,13 @@ func recognize(cmd *cobra.Command, args []string) {
 		modelFile = args[0]
 	} else {
 		ui.Fatalf("Usage: pipeclean recognize <modelFile>")
-		os.Exit(1)
+		ui.Exit('-')
 	}
 
 	model, err := nlp.LoadModel(modelFile)
 	if err != nil {
-		panic(err.Error())
+		ui.Fatal(err)
+		ui.Exit('>')
 	}
 
 	reader := bufio.NewReader(os.Stdin)

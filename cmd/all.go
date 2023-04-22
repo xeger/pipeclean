@@ -91,7 +91,8 @@ func loadModels(paths []string) (map[string]nlp.Model, error) {
 	for _, path := range paths {
 		fi, err := os.Stat(path)
 		if err != nil {
-			panic(err.Error())
+			ui.Fatal(err)
+			ui.Exit('>')
 		}
 		if fi.IsDir() {
 			dirResult, err := nlp.LoadModels(path)
@@ -102,7 +103,7 @@ func loadModels(paths []string) (map[string]nlp.Model, error) {
 				result[k] = v
 			}
 		} else {
-			panic("not implemented: load single file")
+			ui.ExitNotImplemented("load single model file")
 		}
 	}
 

@@ -6,5 +6,3 @@
 1. Heuristic policy (e.g. base64):
     - input model --(confidence)--> disposition
     - match model + markov model
-1. replace panics with proper fatal errors
-1. warning/error reporting mechanism

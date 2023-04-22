@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/xeger/pipeclean/cmd/ui"
 	"github.com/xeger/pipeclean/format/mysql"
 )
 
@@ -24,8 +25,8 @@ func init() {
 
 func extract(cmd *cobra.Command, args []string) {
 	if len(args) != 1 {
-		// TODO better!
-		panic("must pass exactly one directory name for model storage")
+		ui.Fatalf("Must pass exactly one directory for model storage")
+		ui.Exit('-')
 	}
 
 	switch modeFlag {
@@ -40,7 +41,7 @@ func extract(cmd *cobra.Command, args []string) {
 }
 
 func extractJson(names []string) {
-	panic("TODO")
+	ui.ExitNotImplemented("extract json")
 }
 
 func extractMysql(names []string) {
@@ -48,7 +49,8 @@ func extractMysql(names []string) {
 	for _, file := range contextFlag {
 		sql, err := ioutil.ReadFile(file)
 		if err != nil {
-			panic(err.Error())
+			ui.Fatal(err)
+			ui.Exit('>')
 		}
 		ctx.Scan(string(sql))
 	}

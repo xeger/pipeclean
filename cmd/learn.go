@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/spf13/cobra"
+	"github.com/xeger/pipeclean/cmd/ui"
 	"github.com/xeger/pipeclean/format/mysql"
 	"github.com/xeger/pipeclean/nlp"
 	"github.com/xeger/pipeclean/scrubbing"
@@ -32,15 +33,16 @@ func learn(cmd *cobra.Command, args []string) {
 	var err error
 
 	if len(args) != 1 {
-		// TODO better!
-		panic("must pass exactly one directory name for model storage")
+		ui.Fatalf("Must pass exactly one directory for model storage")
+		ui.Exit('-')
 	}
 
 	models := make(map[string]nlp.Model)
 	if appendFlag {
 		models, err = loadModels(args)
 		if err != nil {
-			panic(err.Error())
+			ui.Fatal(err)
+			ui.Exit('>')
 		}
 	}
 
@@ -48,7 +50,8 @@ func learn(cmd *cobra.Command, args []string) {
 	if configFlag != "" {
 		cfg, err = NewConfigFile(configFlag)
 		if err != nil {
-			panic("malformed config:" + err.Error())
+			ui.Fatal(err)
+			ui.Exit('>')
 		}
 	} else {
 		cfg = DefaultConfig()
@@ -62,7 +65,7 @@ func learn(cmd *cobra.Command, args []string) {
 	}
 
 	if err = cfg.Validate(models); err != nil {
-		os.Exit(int('l'))
+		ui.Exit('>')
 	}
 
 	switch modeFlag {
@@ -71,15 +74,14 @@ func learn(cmd *cobra.Command, args []string) {
 	case "mysql":
 		learnMysql(models, cfg.Scrubbing)
 	default:
-		// should never happen (cobra should validate)
-		panic("unknown mode: " + modeFlag)
+		ui.ExitBug("unknown mode: " + modeFlag)
 	}
 
 	saveModels(models, args[0])
 }
 
 func learnJson(models map[string]nlp.Model, pol *scrubbing.Policy) {
-	panic("TODO")
+	ui.ExitNotImplemented("learn json")
 }
 
 func learnMysql(models map[string]nlp.Model, pol *scrubbing.Policy) {
@@ -88,7 +90,8 @@ func learnMysql(models map[string]nlp.Model, pol *scrubbing.Policy) {
 	for _, file := range contextFlag {
 		sql, err := ioutil.ReadFile(file)
 		if err != nil {
-			panic(err.Error())
+			ui.Fatal(err)
+			ui.Exit('>')
 		}
 		ctx.Scan(string(sql))
 	}
