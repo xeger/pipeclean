@@ -12,17 +12,17 @@
     },
     "givenName": {
       "markov": {
-        "order": 4
+        "order": 2
       }
     },
     "investmentName": {
       "markov": {
-        "order": 4
+        "order": 3
       }
     },
     "sn": {
       "markov": {
-        "order": 4
+        "order": 2
       }
     },
     "streetName": {

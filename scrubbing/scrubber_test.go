@@ -15,7 +15,7 @@ func scrub(s, field string) string {
 }
 
 func scrubSalted(s, field, salt string) string {
-	return scrubbing.NewScrubber(salt, nil, scrubbing.DefaultPolicy()).ScrubString(s, []string{field})
+	return scrubbing.NewScrubber(salt, false, scrubbing.DefaultPolicy(), nil).ScrubString(s, []string{field})
 }
 
 func TestDeepJSON(t *testing.T) {
@@ -52,7 +52,7 @@ func TestHeuristic(t *testing.T) {
 		"horse": "horse",
 	}
 	for in, want := range tests {
-		scrubber := scrubbing.NewScrubber(salt, models, pol)
+		scrubber := scrubbing.NewScrubber(salt, false, pol, models)
 		if got := scrubber.ScrubString(in, nil); got != want {
 			t.Errorf(`scrub(%q) = %q, want %q`, in, got, want)
 		}

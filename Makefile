@@ -21,7 +21,7 @@ bin/pipeclean-linux-arm64:
 
 benchmark:
 	time cat $(DATA)/sql/benchmark.sql | ./pipeclean learn -m mysql -c $(DATA)/config.json -r -x $(DATA)/sql/schema.sql $(DATA)/models
-	time cat $(DATA)/sql/benchmark.sql | ./pipeclean scrub -m mysql -c $(DATA)/config.json -x $(DATA)/sql/schema.sql $(DATA)/models > $(DATA)/sql/benchmark-output.sql
+	time cat $(DATA)/sql/benchmark.sql | ./pipeclean scrub -m mysql -c $(DATA)/config.json -k -x $(DATA)/sql/schema.sql $(DATA)/models > $(DATA)/sql/benchmark-output.sql
 
 clean:
 	cd bin ; rm -Rf `git check-ignore *`

@@ -27,7 +27,7 @@ func scrub(ctx *mysql.Context, input string) string {
 	output := bytes.NewBuffer(make([]byte, 0, len(input)))
 	writer := bufio.NewWriter(output)
 
-	scrubber := scrubbing.NewScrubber("", nil, scrubbing.DefaultPolicy())
+	scrubber := scrubbing.NewScrubber("", false, scrubbing.DefaultPolicy(), nil)
 	go mysql.ScrubChan(ctx, scrubber, in, out)
 
 	for {

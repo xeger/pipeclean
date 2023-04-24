@@ -19,6 +19,7 @@ var (
 	confidenceFlag  float64
 	configFlag      string
 	contextFlag     []string
+	markFlag        bool
 	modeFlag        string
 	parallelismFlag int
 	saltFlag        string
