@@ -20,27 +20,27 @@ type MarkovDefinition struct {
 type MarkovModel struct {
 	chain     gomarkov.Chain
 	separator string
-	lenFreq   map[int]int
-	lenMax    int
+	stats     modelStats
 }
 
 type markovModelJSON struct {
 	Separator string         `json:"separator"`
 	Chain     gomarkov.Chain `json:"chain"`
-	LenFreq   map[int]int    `json:"len_freq"`
+	Stats     modelStats     `json:"stats"`
 }
 
 func NewMarkovModel(order int, separator string) *MarkovModel {
 	return &MarkovModel{
 		chain:     *gomarkov.NewChain(order),
 		separator: separator,
-		lenFreq:   make(map[int]int),
-		lenMax:    0,
+		stats: modelStats{
+			FreqN: make(map[int]int),
+		},
 	}
 }
 
 func (m *MarkovModel) MarshalJSON() ([]byte, error) {
-	obj := markovModelJSON{Separator: m.separator, Chain: m.chain, LenFreq: m.lenFreq}
+	obj := markovModelJSON{Separator: m.separator, Chain: m.chain, Stats: m.stats}
 	return json.Marshal(obj)
 }
 
@@ -53,18 +53,13 @@ func (m *MarkovModel) UnmarshalJSON(b []byte) error {
 
 	m.chain = obj.Chain
 	m.separator = obj.Separator
-	m.lenFreq = obj.LenFreq
-
-	m.lenMax = 0
-	for l := range m.lenFreq {
-		if l > m.lenMax {
-			m.lenMax = l
-		}
-	}
-
+	m.stats = obj.Stats
+	m.stats.Derive()
 	return nil
 }
 
+// Generate derives a random string deterministically from the seed.
+// The length is guaranteed to be between the min and max lengths seen during training.
 func (m *MarkovModel) Generate(seed string) string {
 	seed = Clean(seed)
 	rand := rand.NewRand(seed)
@@ -74,12 +69,14 @@ func (m *MarkovModel) Generate(seed string) string {
 	for i := 0; i < order; i++ {
 		state = append(state, gomarkov.StartToken)
 	}
-	for state[len(state)-1] != gomarkov.EndToken && len(state) < m.lenMax+order {
+	for state[len(state)-1] != gomarkov.EndToken && len(state) < m.stats.MaxN+order {
 		next, err := m.chain.GenerateDeterministic(state[(len(state)-order):], rand)
 		if err != nil {
 			panic("MarkovModel.Generate: " + err.Error())
 		}
-		state = append(state, next)
+		if next != gomarkov.EndToken || len(state) >= m.stats.MinN {
+			state = append(state, next)
+		}
 	}
 
 	// Handle empty models or erroneous output
@@ -115,12 +112,7 @@ func (m *MarkovModel) Train(input string) {
 	input = Clean(input)
 	tokens := strings.Split(input, m.separator)
 	m.chain.Add(tokens)
-
-	l := len(tokens)
-	m.lenFreq[l]++
-	if l > m.lenMax {
-		m.lenMax = l
-	}
+	m.stats.Add(input)
 }
 
 func (m *MarkovModel) Validate(md MarkovDefinition) error {
