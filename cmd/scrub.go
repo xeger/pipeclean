@@ -30,8 +30,8 @@ type scrubFunc func(*scrubbing.Scrubber, <-chan string, chan<- string)
 func init() {
 	scrubCmd.PersistentFlags().StringVarP(&configFlag, "config", "c", "", "configuration file (JSON)")
 	scrubCmd.PersistentFlags().StringSliceVarP(&contextFlag, "context", "x", []string{}, "extra files to parse for improved accuracy")
-	scrubCmd.PersistentFlags().BoolVarP(&markFlag, "mark", "k", false, "visually verify output by suppressing mask/generate with 0x20 (space)")
-	scrubCmd.PersistentFlags().StringVarP(&saltFlag, "salt", "s", "", "static diversifier for PRNG seed")
+	scrubCmd.PersistentFlags().BoolVarP(&maskFlag, "mask", "k", false, "visually verify completeness")
+	scrubCmd.PersistentFlags().StringVarP(&saltFlag, "salt", "s", "", "PRNG seed static diversifier")
 }
 
 func scrub(cmd *cobra.Command, args []string) {
@@ -67,7 +67,7 @@ func scrub(cmd *cobra.Command, args []string) {
 }
 
 func scrubJson(models map[string]nlp.Model, pol *scrubbing.Policy) {
-	sc := scrubbing.NewScrubber(saltFlag, markFlag, pol, models)
+	sc := scrubbing.NewScrubber(saltFlag, maskFlag, pol, models)
 	// TODO: parallelize JSON scrubbing (but not parsing)
 	scrubjson.Scrub(sc, os.Stdin, os.Stdout)
 }
@@ -90,7 +90,7 @@ func scrubMysql(models map[string]nlp.Model, pol *scrubbing.Policy) {
 	for i := 0; i < N; i++ {
 		in[i] = make(chan string)
 		out[i] = make(chan string)
-		sc := scrubbing.NewScrubber(saltFlag, markFlag, pol, models)
+		sc := scrubbing.NewScrubber(saltFlag, maskFlag, pol, models)
 		go mysql.ScrubChan(ctx, sc, in[i], out[i])
 	}
 	drain := func(to int) {

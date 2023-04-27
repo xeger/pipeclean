@@ -29,19 +29,19 @@ var reTelUS = regexp.MustCompile(`^\(?\d{3}\)?[ -]?\d{3}-?\d{4}$`)
 var reZip = regexp.MustCompile(`^\d{5}(-\d{4})?$`)
 
 type Scrubber struct {
-	mark    bool
+	maskAll bool
 	models  map[string]nlp.Model
 	policy  *Policy
 	salt    string
 	shallow bool
 }
 
-func NewScrubber(salt string, mark bool, policy *Policy, models map[string]nlp.Model) *Scrubber {
+func NewScrubber(salt string, maskAll bool, policy *Policy, models map[string]nlp.Model) *Scrubber {
 	return &Scrubber{
-		models: models,
-		mark:   mark,
-		policy: policy,
-		salt:   salt,
+		models:  models,
+		maskAll: maskAll,
+		policy:  policy,
+		salt:    salt,
 	}
 }
 
@@ -83,14 +83,9 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 		switch disposition.Action() {
 		case "erase":
 			return ""
-		case "mask":
-			if sc.mark {
-				return strings.Repeat(" ", len(s))
-			}
-			return sc.mask(s)
 		case "generate":
-			if sc.mark {
-				return strings.Repeat(" ", len(s))
+			if sc.maskAll {
+				return sc.mask(s)
 			}
 			if model := sc.models[disposition.Parameter()]; model != nil {
 				if generator, ok := model.(nlp.Generator); ok {
@@ -100,6 +95,8 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 				// should never happen if Policy has been properly validated
 				panic("unknown model name for generate action: " + disposition.Action())
 			}
+		case "mask":
+			return sc.mask(s)
 		}
 		// should never happen if Policy has been properly validated
 		ui.ExitBug("unknown policy action: " + disposition.Action())
