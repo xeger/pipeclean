@@ -2,8 +2,8 @@
 DATA=testdata
 
 default:
-	@cat $(DATA)/sql/data.sql | ./pipeclean learn -c $(DATA)/config.json -m mysql -r -x $(DATA)/sql/schema.sql $(DATA)/models
-	@cat $(DATA)/sql/data.sql | ./pipeclean scrub -c $(DATA)/config.json -m mysql -x $(DATA)/sql/schema.sql $(DATA)/models
+	@cat $(DATA)/sql/data.sql | ./pipeclean learn -c $(DATA)/config.json -m mysql -r -v -x $(DATA)/sql/schema.sql $(DATA)/models
+	@cat $(DATA)/sql/data.sql | ./pipeclean scrub -c $(DATA)/config.json -m mysql -v -x $(DATA)/sql/schema.sql $(DATA)/models
 
 bin: bin/pipeclean-darwin-amd64 bin/pipeclean-darwin-arm64 bin/pipeclean-linux-amd64 bin/pipeclean-linux-arm64
 

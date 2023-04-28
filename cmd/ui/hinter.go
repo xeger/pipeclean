@@ -9,11 +9,13 @@ type Hinter interface {
 	Hint(hints ...string) Hinter
 }
 
-type hinter struct{}
+type hinter struct{ suppress bool }
 
 func (h *hinter) Hint(hints ...string) Hinter {
-	for _, hint := range hints {
-		fmt.Fprintln(os.Stderr, "  "+hint)
+	if !h.suppress {
+		for _, hint := range hints {
+			fmt.Fprintln(os.Stderr, "  "+hint)
+		}
 	}
 	return h
 }

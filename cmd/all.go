@@ -163,6 +163,12 @@ func loadModels(paths []string) (map[string]nlp.Model, error) {
 		}
 	}
 
+	modelNames := make([]string, 0, len(result))
+	for name := range result {
+		modelNames = append(modelNames, name)
+	}
+	ui.Verbosef("Loaded %d models", len(result)).Hint(modelNames...)
+
 	return result, nil
 }
 

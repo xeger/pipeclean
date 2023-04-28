@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/xeger/pipeclean/cmd/ui"
 )
 
 var (
@@ -16,6 +17,7 @@ var (
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&modeFlag, "mode", "m", "", "data format (json, mysql, etc)")
+	rootCmd.PersistentFlags().BoolVarP(&ui.IsVerbose, "verbose", "v", false, "print extra debug output")
 	rootCmd.MarkFlagRequired("mode")
 	rootCmd.AddCommand(extractCmd)
 	rootCmd.AddCommand(generateCmd)
