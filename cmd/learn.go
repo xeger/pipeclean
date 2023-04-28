@@ -68,9 +68,8 @@ func learn(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if errs := cfg.Validate(models); errs != nil {
-		ui.Exit('>')
-	}
+	// NB we deliberately do not validate models here, because they may
+	// not exist yet!
 
 	switch modeFlag {
 	case "json":
