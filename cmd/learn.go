@@ -58,7 +58,7 @@ func learn(cmd *cobra.Command, args []string) {
 	}
 
 	// Initialize any missing models
-	for name, md := range cfg.Models {
+	for name, md := range cfg.Learning {
 		if _, ok := models[name]; !ok {
 			if md.Dict != nil {
 				models[name] = nlp.NewDictModel()

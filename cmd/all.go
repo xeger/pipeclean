@@ -66,16 +66,17 @@ func (mc ModelConfig) Validate() error {
 // flags are much more malleable and vary at the whim of the user
 // and the use case.
 type Config struct {
-	// Models describes the models used to learn and scrub.
+	// Learning describes how to create and train models from data.
 	// Key: model name
 	// Value: model configuration
-	Models    map[string]ModelConfig
+	Learning map[string]ModelConfig
+	// Scrubbing describes how to clean up data.
 	Scrubbing *scrubbing.Policy
 }
 
 func DefaultConfig() *Config {
 	return &Config{
-		Models:    map[string]ModelConfig{},
+		Learning:  map[string]ModelConfig{},
 		Scrubbing: scrubbing.DefaultPolicy(),
 	}
 }
@@ -105,7 +106,7 @@ func (cfg *Config) Validate(models map[string]nlp.Model) []error {
 		errs = append(errs, scrubbingErrors...)
 	}
 
-	for name, defn := range cfg.Models {
+	for name, defn := range cfg.Learning {
 		if err := defn.Validate(); err != nil {
 			errs = append(errs, err)
 		}

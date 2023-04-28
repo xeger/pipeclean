@@ -1,5 +1,5 @@
 {
-  "models": {
+  "learning": {
     "city": {
       "markov": {
         "order": 4
