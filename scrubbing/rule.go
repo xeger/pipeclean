@@ -2,6 +2,7 @@ package scrubbing
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 )
 
@@ -25,6 +26,10 @@ func (r *FieldNameRule) MarshalJSON() ([]byte, error) {
 		Out: string(r.Out),
 	}
 	return json.Marshal(obj)
+}
+
+func (r FieldNameRule) String() string {
+	return fmt.Sprintf("%s ―➤ %s", r.In.String(), r.Out.String())
 }
 
 func (r *FieldNameRule) UnmarshalJSON(b []byte) error {
@@ -62,4 +67,8 @@ type HeuristicRule struct {
 	P float64
 	// Out describes what to do when a value satisfies this rule.
 	Out Disposition
+}
+
+func (r HeuristicRule) String() string {
+	return fmt.Sprintf("%s ―(P≤%1.2f)―➤ %s", r.In, r.P, r.Out.String())
 }

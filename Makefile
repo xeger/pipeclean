@@ -1,9 +1,11 @@
-.PHONY: benchmark bin clean default test
+.PHONY: benchmark bin clean clean-models default test
 DATA=testdata
 
-default:
-	@cat $(DATA)/sql/data.sql | ./pipeclean learn -c $(DATA)/config.json -m mysql -r -v -x $(DATA)/sql/schema.sql $(DATA)/models
-	@cat $(DATA)/sql/data.sql | ./pipeclean scrub -c $(DATA)/config.json -m mysql -v -x $(DATA)/sql/schema.sql $(DATA)/models
+# quick smoke test of basic workflow
+default: clean-models
+	@cat $(DATA)/sql/data.sql | ./pipeclean learn -c $(DATA)/config.json -m mysql -r -x $(DATA)/sql/schema.sql $(DATA)/models
+	@cat $(DATA)/sql/data.sql | ./pipeclean scrub -c $(DATA)/config.json -m mysql -x $(DATA)/sql/schema.sql $(DATA)/models > /dev/null
+	@cat $(DATA)/sql/data.sql | ./pipeclean verify -c $(DATA)/config.json -m mysql -x $(DATA)/sql/schema.sql $(DATA)/models
 
 bin: bin/pipeclean-darwin-amd64 bin/pipeclean-darwin-arm64 bin/pipeclean-linux-amd64 bin/pipeclean-linux-arm64
 
@@ -23,8 +25,10 @@ benchmark:
 	time cat $(DATA)/sql/benchmark.sql | ./pipeclean learn -m mysql -c $(DATA)/config.json -r -x $(DATA)/sql/schema.sql $(DATA)/models
 	time cat $(DATA)/sql/benchmark.sql | ./pipeclean scrub -m mysql -c $(DATA)/config.json -k -x $(DATA)/sql/schema.sql $(DATA)/models > $(DATA)/sql/benchmark-output.sql
 
-clean:
+clean: clean-models
 	cd bin ; rm -Rf `git check-ignore *`
+
+clean-models:
 	cd $(DATA)/models ; rm -Rf `git check-ignore *`
 
 test:

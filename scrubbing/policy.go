@@ -36,15 +36,17 @@ func DefaultPolicy() *Policy {
 // MatchFieldName returns a Disposition for the given field name
 // if it matches any of the policy's field-name patterns.
 // Otherwise it returns the empty string.
-func (p Policy) MatchFieldName(names []string) Disposition {
-	for _, rule := range p.FieldName {
-		for _, n := range names {
-			if rule.In.MatchString(n) {
-				return rule.Out
+func (p Policy) MatchFieldName(names []string) (Disposition, int) {
+	if len(names) > 0 {
+		for idx, rule := range p.FieldName {
+			for _, n := range names {
+				if rule.In.MatchString(n) {
+					return rule.Out, idx
+				}
 			}
 		}
 	}
-	return ""
+	return "", -1
 }
 
 // Validate checks that the policy is internally consistent.

@@ -46,7 +46,7 @@ func (v *learnVisitor) Enter(in ast.Node) (ast.Node, bool) {
 			}()
 			switch st.Kind() {
 			case test_driver.KindString:
-				disposition := v.policy.MatchFieldName(v.insert.Names())
+				disposition, _ := v.policy.MatchFieldName(v.insert.Names())
 				switch disposition.Action() {
 				case "generate":
 					model := v.models[disposition.Parameter()]

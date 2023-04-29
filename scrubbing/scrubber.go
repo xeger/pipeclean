@@ -29,11 +29,12 @@ var reTelUS = regexp.MustCompile(`^\(?\d{3}\)?[ -]?\d{3}-?\d{4}$`)
 var reZip = regexp.MustCompile(`^\d{5}(-\d{4})?$`)
 
 type Scrubber struct {
-	maskAll bool
-	models  map[string]nlp.Model
-	policy  *Policy
-	salt    string
-	shallow bool
+	maskAll  bool
+	models   map[string]nlp.Model
+	policy   *Policy
+	salt     string
+	shallow  bool
+	Verifier *Verifier
 }
 
 func NewScrubber(salt string, maskAll bool, policy *Policy, models map[string]nlp.Model) *Scrubber {
@@ -50,14 +51,34 @@ func NewScrubber(salt string, maskAll bool, policy *Policy, models map[string]nl
 //
 // It returns true for base64 encoded values since they are opaque and cannot be scrubbed;
 // it's safest to remove them from the stream entirely.
+//
+// It records hit statistics if a Verifier is provided, but does not record
+// miss statistics under the assumption that the caller will always try
+// to call ScrubString() if this returns false.
 func (sc *Scrubber) EraseString(s string, names []string) bool {
-	if disposition := sc.policy.MatchFieldName(names); disposition != "" {
+	if disposition, ruleIndex := sc.policy.MatchFieldName(names); disposition != "" {
+		if sc.Verifier != nil {
+			sc.Verifier.recordFieldName(s, "", names, ruleIndex, disposition)
+		}
 		return disposition.Action() == "erase"
 	}
+
+	for ruleIndex, rule := range sc.policy.Heuristic {
+		model := sc.models[rule.In]
+		if model.Recognize(s) >= (1.0 - rule.P) {
+			if sc.Verifier != nil {
+				sc.Verifier.recordHeuristic(s, "", names, ruleIndex, rule.Out)
+			}
+			return rule.Out.Action() == "erase"
+		}
+	}
+
+	// NB: deliberately not recording a pass (we assume caller will try to ScrubString).
 	return false
 }
 
 // ScrubData recursively scrubs maps and arrays in-place.
+// It records no statistics with the Verifier.
 func (sc *Scrubber) ScrubData(data any, names []string) any {
 	switch v := data.(type) {
 	case string:
@@ -77,7 +98,9 @@ func (sc *Scrubber) ScrubData(data any, names []string) any {
 	}
 }
 
-// ScrubString masks recognized PII in a string, preserving other values.
+// ScrubString applies rules to sanitize a string, preserving values that do
+// not match any rule.
+// It records statistics if a Verifier is provided.
 func (sc *Scrubber) ScrubString(s string, names []string) string {
 	handle := func(disposition Disposition) string {
 		switch disposition.Action() {
@@ -103,21 +126,21 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 		return ""
 	}
 
-	// Match via field name policy
-	if len(names) > 0 {
-		if disposition := sc.policy.MatchFieldName(names); disposition != "" {
-			return handle(disposition)
+	if disposition, ruleIndex := sc.policy.MatchFieldName(names); disposition != "" {
+		out := handle(disposition)
+		if sc.Verifier != nil {
+			sc.Verifier.recordFieldName(s, out, names, ruleIndex, disposition)
 		}
+		return out
 	}
 
-	// Handle deep scrubbing of encapsulated data formats
 	if !sc.shallow {
 		var data any
 
 		if err := json.Unmarshal([]byte(s), &data); err == nil {
 			scrubbed, err := json.Marshal(sc.ScrubData(data, nil))
 			if err != nil {
-				panic(err)
+				ui.Fatal(err)
 			}
 			return string(scrubbed)
 		}
@@ -127,7 +150,7 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 			case []any, map[string]any:
 				scrubbed, err := yaml.Marshal(sc.ScrubData(v, nil))
 				if err != nil {
-					panic(err)
+					ui.Fatal(err)
 				}
 				return string(scrubbed)
 			}
@@ -139,14 +162,20 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 		}
 	}
 
-	// Match heuristically
-	for _, rule := range sc.policy.Heuristic {
+	for ruleIndex, rule := range sc.policy.Heuristic {
 		model := sc.models[rule.In]
 		if model.Recognize(s) >= (1.0 - rule.P) {
-			return handle(rule.Out)
+			out := handle(rule.Out)
+			if sc.Verifier != nil {
+				sc.Verifier.recordHeuristic(s, out, names, ruleIndex, rule.Out)
+			}
+			return out
 		}
 	}
 
+	if sc.Verifier != nil {
+		sc.Verifier.recordPass(s, names)
+	}
 	return s
 }
 

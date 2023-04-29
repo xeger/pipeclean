@@ -25,6 +25,7 @@ func init() {
 	rootCmd.AddCommand(recognizeCmd)
 	rootCmd.AddCommand(scrubCmd)
 	rootCmd.AddCommand(trainCmd)
+	rootCmd.AddCommand(verifyCmd)
 }
 
 func Execute() error {

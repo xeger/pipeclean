@@ -57,22 +57,25 @@ func scrub(cmd *cobra.Command, args []string) {
 
 	switch modeFlag {
 	case "json":
-		scrubJson(models, cfg.Scrubbing)
+		scrubJson(models, cfg.Scrubbing, nil)
 	case "mysql":
-		scrubMysql(models, cfg.Scrubbing)
+		scrubMysql(models, cfg.Scrubbing, nil)
 	default:
 		// should never happen (cobra should validate)
 		panic("unknown mode: " + modeFlag)
 	}
 }
 
-func scrubJson(models map[string]nlp.Model, pol *scrubbing.Policy) {
+func scrubJson(models map[string]nlp.Model, pol *scrubbing.Policy, verifier *scrubbing.Verifier) {
+	// TODO: deal with context (is it useful at all? JSON schema maybe?)
 	sc := scrubbing.NewScrubber(saltFlag, maskFlag, pol, models)
-	// TODO: parallelize JSON scrubbing (but not parsing)
+	sc.Verifier = verifier
+
+	// TODO: parallelize JSON scrubbing
 	scrubjson.Scrub(sc, os.Stdin, os.Stdout)
 }
 
-func scrubMysql(models map[string]nlp.Model, pol *scrubbing.Policy) {
+func scrubMysql(models map[string]nlp.Model, pol *scrubbing.Policy, verifier *scrubbing.Verifier) {
 	// Scan any context provided
 	ctx := mysql.NewContext()
 	for _, file := range contextFlag {
@@ -91,11 +94,16 @@ func scrubMysql(models map[string]nlp.Model, pol *scrubbing.Policy) {
 		in[i] = make(chan string)
 		out[i] = make(chan string)
 		sc := scrubbing.NewScrubber(saltFlag, maskFlag, pol, models)
+		sc.Verifier = verifier
 		go mysql.ScrubChan(ctx, sc, in[i], out[i])
 	}
 	drain := func(to int) {
 		for i := 0; i < to; i++ {
-			fmt.Print(<-out[i])
+			output := <-out[i]
+			if verifier == nil {
+				// actually produce output when not verifying
+				fmt.Print(output)
+			}
 		}
 	}
 	done := func() {
