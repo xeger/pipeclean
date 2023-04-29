@@ -42,14 +42,6 @@
         "out": "mask"
       },
       {
-        "in": "im_entities.name",
-        "out": "generate(entityName)"
-      },
-      {
-        "in": "im_funds.name",
-        "out": "generate(investmentName)"
-      },
-      {
         "in": "first_name",
         "out": "generate(givenName)"
       },
