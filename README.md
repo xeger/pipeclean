@@ -1,12 +1,12 @@
 # What Is This?
 
-Pipeclean removes sensitive information from large-text data sets efficiently by streaming them from stdin to stdout:
+Pipeclean efficiently removes sensitive information from large, textual data files by streaming them from stdin to stdout:
 
-```
-$ cat data.sql | pipeclean -m mysql > sanitized.sql
+```bash
+cat data.sql | pipeclean --mode mysql > sanitized.sql
 ```
 
-It utilizes only streaming parsers, allowing constant memory usage even for large input files. Some modes employ parallelism up to `runtime.NumCPU()` which promotes fast, efficient operation. Sanitizing a 500 MiB MySQL dump takes ~30 seconds with peak memory usage of ~4 GiB on a 2020-era MacBook Pro M1 with eight cores.
+It utilizes streaming parsers, achieving constant memory usage even for large input files. Some modes employ parallelism up to `runtime.NumCPU()` which promotes fast, efficient operation. For example, sanitizing a 500 MiB MySQL dump takes ~30 seconds with peak memory usage of ~4 GiB on a 2020-era MacBook Pro M1 with eight cores.
 
 Pipeclean attempts to sanitize encapsulated data, too; if a MySQL column contains JSON or YAML, it will parse and traverse the encapsulated document and write sanitized JSON/YAML as the output column value.
 
@@ -91,14 +91,24 @@ Pipeclean will use your scrubbing policy to identify input fields and train the 
 
 The `learn` and `scrub` commands both accept a `-x` / `--context` flag, which is a list of extra files that pipeclean should parse to learn about the structure of data. The contents of these files do not appear in pipeclean's output nor contribute to the training of models.
 
-Context is important! For example, in MySQL dumps, the `INSERT` statement use a shorthand form that does not specify column names. Without context, your pipeclean rules need to refer to columns by their insertion index:
+**Context is important**. For example, in MySQL dumps, the `INSERT` statement use a shorthand form that does not specify column names. Without context, your pipeclean rules need to refer to columns by their insertion index:
 
-```
+```json
 { "in": "users.3", "out": "mask" }
 ```
 
 If you produce your MySQL dump as two files, a `schema.sql` produced with `mysqldump --no-data` and a `data.sql` produced with `mysqldump --no-create-info`, you can tell pipeclean about your column names with an `-x schema.sql` flag. This allows your configuration to specify column names instead of indices:
 
-```
+```json
 { "in": "users.email", "out": "mask" }
 ```
+
+If you provide the schema definition as context, pipeclean's default configuration is quite useful, handling common field names such as `email`, `phone`, or `zip`, and you can omit a configuration file for basic sanitization. Without context, the default configuration is useless and pipeclean won't be able to sanitize anything.
+
+If your MySQL dump is a single file that contains both the schema and data, you can still use it:
+
+```bash
+cat dump.sql | pipeclean -m mysql -x dump.sql
+```
+
+However, **context does not use a streaming parser**, so pipeclean's memory usage may be extraordinarily high if your dump is large. It is much better to separate the schema from the data.

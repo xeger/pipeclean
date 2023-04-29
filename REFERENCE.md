@@ -58,7 +58,7 @@ When pipeclean applies field-name rules to a piece of data, it matches the rule 
 - `users.email`
 - `users.0`
 
-## Learning and Training
+## Learning
 
 The `learn` command parses fragments of structured data from stdin, infers the relevant model for each field, and if that model is trainable, uses the field data to train the model. It trains all models concurrently from the same input data.
 
@@ -94,6 +94,7 @@ The learning section specifies some parameters for each named Markov model:
   - a space `" "` specifies a phrase-based model
 - **order** controls how many tokens to look back when deciding on the probability of the next token
 
-### Training an Individual Model
+## Auxiliary Commands
 
-**TODO:** cover how to do this advanced thing and describe why it's useful.
+**TODO:** cover train, extract, generate, recognize
+
