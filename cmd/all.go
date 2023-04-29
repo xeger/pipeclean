@@ -20,7 +20,7 @@ var (
 	configFlag      string
 	contextFlag     []string
 	maskFlag        bool
-	modeFlag        string
+	modeFlag        string = "mysql"
 	parallelismFlag int
 	saltFlag        string
 )

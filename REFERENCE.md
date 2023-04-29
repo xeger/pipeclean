@@ -1,5 +1,13 @@
 # Pipeclean Reference Guide
 
+## Mode
+
+All pipeclean subcommands accept a `-m` / `--mode` flag that defines the data format being worked with; currently, only `mysql` is well-tested and `json` is provided as a proof of concept.
+
+In `mysql` mode, the input **must** be formatted in the style of `mysqldump` with one statement per line. If a statement spans lines, it will fail to parse and pipeclean will emit it, unchanged, to the output. MySQL scrubbing uses parallelism.
+
+In the (experimental) `json` mode, the input is a JSON document and that is parsed by `encoding/json.NewDecoder()` so it _may_ stream, but this has not been explored. JSON mode does not (yet) use parallelism and **may not properly apply rules**.
+
 ## Scrubbing
 
 The `scrub` command parses fragments of structured data from stdin, applies sanitization rules, and prints the result to stdout.
@@ -8,11 +16,7 @@ The `scrub` command parses fragments of structured data from stdin, applies sani
 pipeclean scrub < -m mode > [ modelsDir1, [ modelsDir2, ... ] ]
 ```
 
-In `mysql` mode, the input **must** be formatted in the style of `mysqldump` with one statement per line. If a statement spans lines, it will fail to parse and pipeclean will emit it, unchanged, to the output. MySQL scrubbing uses parallelism.
-
-In the (experimental) `json` mode, the input is a JSON document and that is parsed by `encoding/json.NewDecoder()` so it _may_ stream, but this has not been explored. JSON mode does not (yet) use parallelism.
-
-In `scrub` mode, the command-line parameters specify a list of directories where model files are stored. Pipeclean loads every recognized file from every specified directory, and validates the loaded models against the configuration before parsing stdin.
+With `scrub`, the command-line parameters specify a list of directories where model files are stored. Pipeclean loads every recognized file from every specified directory, and validates the loaded models against the configuration before parsing stdin.
 
 ### Configuration for Scrubbing
 

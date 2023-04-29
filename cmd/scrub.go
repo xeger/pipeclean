@@ -67,6 +67,7 @@ func scrub(cmd *cobra.Command, args []string) {
 }
 
 func scrubJson(models map[string]nlp.Model, pol *scrubbing.Policy, verifier *scrubbing.Verifier) {
+	ui.Warnf("JSON scrubbing is experimental and may not work as expected")
 	// TODO: deal with context (is it useful at all? JSON schema maybe?)
 	sc := scrubbing.NewScrubber(saltFlag, maskFlag, pol, models)
 	sc.Verifier = verifier
