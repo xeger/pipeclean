@@ -1,18 +1,18 @@
 # What Is This?
 
-Pipeclean is a tool to efficient remove sensitive information from large, textual data files by streaming them from stdin to stdout. By default, it expects its input to consist of a MySQL database dump produced with `mysqldump`:
+Pipeclean is a tool to efficiently remove sensitive information from large datasets by streaming them from stdin to stdout. By default, it expects its input to consist of a MySQL dump produced with `mysqldump`:
 
 ```bash
 cat data.sql | pipeclean scrub > sanitized.sql
 ```
 
-Pipeclean utilizes streaming parsers, achieving constant memory usage even for large input files. Some modes employ parallelism up to `runtime.NumCPU()` which promotes fast, efficient operation. For example, sanitizing a 500 MiB MySQL dump takes ~30 seconds with peak memory usage of ~4 GiB on a 2020-era MacBook Pro M1 with eight cores.
+Pipeclean utilizes streaming parsers, achieving constant memory usage even for multi-GiB input files. Maximum filesize is bounded only by available disk space. It also employs parallelism up to the number of available CPU cores. Sanitizing a 500 MiB MySQL dump takes ~30 seconds with peak memory usage of ~4 GiB on a 2020-era MacBook Pro M1 with eight cores.
 
 Pipeclean attempts to sanitize encapsulated data, too; if a MySQL column contains JSON or YAML, it will parse and traverse the encapsulated document and write sanitized JSON/YAML as the output column value.
 
-Pipeclean can employ Markov language models to generate plausible-looking replacement data; you can train it with actual peoples' names from your database, for example, and at runtime, use the trained model to generate replacement names that have a similar look and feel. Markovian models can also be used for heuristic scrubbing, allowing pipeclean to recognize data fields that contain a first name regardless of how the field is named or where in the input it appears, and replace each occurrence with a fake name.
+Pipeclean can employ Markovian language models to generate plausible-looking replacement data; you can train it with actual peoples' names from your database, for example, and at runtime, use the trained model to generate replacement names that have a similar look and feel. Markovian models can also be used for heuristic scrubbing, allowing pipeclean to recognize data fields that contain a first name (etc) regardless of how the field is named or where in the input it appears, and replace each occurrence with a fake name.
 
-Finally, pipeclean includes a `verify` command to report on the efficacy and safety of scrubbing.
+Finally, pipeclean includes a `verify` command to report on the efficancy and safety of your scrubbing configuration.
 
 ## Install
 
