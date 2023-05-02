@@ -81,6 +81,9 @@ func (v *Verifier) recordHeuristic(in, out string, names []string, ruleIndex int
 }
 
 func (v *Verifier) recordPass(in string, names []string) {
+	v.mx.Lock()
+	defer v.mx.Unlock()
+
 	if in == "" {
 		return // the zero string does not contribute to statistics
 	}
