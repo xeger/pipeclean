@@ -129,6 +129,7 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 		return ""
 	}
 
+	// First match against field-name rules
 	if disposition, ruleIndex := sc.policy.MatchFieldName(names); disposition != "" {
 		out := handle(disposition)
 		if sc.Verifier != nil {
@@ -137,6 +138,19 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 		return out
 	}
 
+	// Then favor heuristic rules
+	for ruleIndex, rule := range sc.policy.Heuristic {
+		model := sc.models[rule.In]
+		if model.Recognize(s) >= (1.0 - rule.P) {
+			out := handle(rule.Out)
+			if sc.Verifier != nil {
+				sc.Verifier.recordHeuristic(s, out, names, ruleIndex, rule.Out)
+			}
+			return out
+		}
+	}
+
+	// Finally, try to recurse into encapsulated structured data
 	if !sc.shallow {
 		var data any
 
@@ -162,17 +176,6 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 		// Empty serialized Ruby YAML hashes.
 		if strings.Index(s, "--- !ruby/hash") == 0 {
 			return "{}"
-		}
-	}
-
-	for ruleIndex, rule := range sc.policy.Heuristic {
-		model := sc.models[rule.In]
-		if model.Recognize(s) >= (1.0 - rule.P) {
-			out := handle(rule.Out)
-			if sc.Verifier != nil {
-				sc.Verifier.recordHeuristic(s, out, names, ruleIndex, rule.Out)
-			}
-			return out
 		}
 	}
 

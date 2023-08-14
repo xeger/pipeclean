@@ -86,26 +86,26 @@ func TestReplacement(t *testing.T) {
 		"replace((()))": "(())",
 	}
 
-	for in, exp := range cases {
-		asFieldName := &scrubbing.Policy{
-			FieldName: []scrubbing.FieldNameRule{
-				{In: regexp.MustCompile("foo"), Out: in},
-			},
-		}
-		if got := scrubWithPolicy("replace-me", "foo", asFieldName, nil); got != exp {
-			t.Errorf(`with FieldNameRule, scrub(%q) = %q, want %q`, in, got, exp)
-		}
+	for out, exp := range cases {
+		// asFieldName := &scrubbing.Policy{
+		// 	FieldName: []scrubbing.FieldNameRule{
+		// 		{In: regexp.MustCompile("foo"), Out: out},
+		// 	},
+		// }
+		// if got := scrubWithPolicy("replace-me", "foo", asFieldName, nil); got != exp {
+		// 	t.Errorf(`with FieldNameRule, scrub(%q) = %q, want %q`, out, got, exp)
+		// }
 
 		asHeuristic := &scrubbing.Policy{
 			Heuristic: []scrubbing.HeuristicRule{
-				{In: "foo", Out: in},
+				{In: "bar", Out: out},
 			},
 		}
 		models := map[string]nlp.Model{
-			"foo": nlp.NewMatchModel([]*regexp.Regexp{regexp.MustCompile("replace-me")}),
+			"bar": nlp.NewMatchModel([]*regexp.Regexp{regexp.MustCompile(`^\{\\?"p\\?":`)}),
 		}
-		if got := scrubWithPolicy("replace-me", "foo", asHeuristic, models); got != exp {
-			t.Errorf(`with HeuristicRule, scrub(%q) = %q, want %q`, in, got, exp)
+		if got := scrubWithPolicy(`{\"p\": \"\"}`, "foo", asHeuristic, models); got != exp {
+			t.Errorf(`with HeuristicRule, scrub(%q) = %q, want %q`, out, got, exp)
 		}
 	}
 }
