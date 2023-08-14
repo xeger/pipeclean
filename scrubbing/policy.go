@@ -55,7 +55,7 @@ func (p Policy) Validate(models map[string]nlp.Model) []error {
 
 	for i, rule := range p.FieldName {
 		switch rule.Out.Action() {
-		case "erase", "mask":
+		case "erase", "mask", "replace":
 			continue
 		case "generate":
 			model := models[rule.Out.Parameter()]
@@ -76,7 +76,7 @@ func (p Policy) Validate(models map[string]nlp.Model) []error {
 			errs = append(errs, fmt.Errorf("unrecognized model %q for heuristic[%d]", rule.In, i))
 		}
 		switch rule.Out.Action() {
-		case "erase", "mask":
+		case "erase", "mask", "replace":
 			continue
 		case "generate":
 			modelOut := models[rule.Out.Parameter()]

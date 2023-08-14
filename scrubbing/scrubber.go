@@ -120,6 +120,9 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 			}
 		case "mask":
 			return sc.mask(s)
+		case "replace":
+			// TODO
+			return sc.replace(s, disposition.Parameter())
 		}
 		// should never happen if Policy has been properly validated
 		ui.ExitBug("unknown policy action: " + disposition.Action())
@@ -227,4 +230,9 @@ func (sc *Scrubber) maskWord(s string) string {
 	}
 
 	return string(sb)
+}
+
+// Replace returns its second parameter, ignoring the first.
+func (sc *Scrubber) replace(s string, replacement string) string {
+	return replacement
 }

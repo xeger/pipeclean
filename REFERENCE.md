@@ -36,6 +36,7 @@ The `out` of a rule specifies what to do when the rule is matched:
 1. `mask` the data by scrambling numbers and letters
 2. `erase` the data (replace id with `NULL` in SQL or falsey values in JSON)
 3. `generate(modelName)` to create plausible surrogate data from a model
+4. `replace(literal)` to replace the data with a fixed literal value
 
 Generation is deterministic and reproducible: given an input string S, the same model will always generate the same derived string S'. Determinism is important because it preserves referential consistency of the data set: if two people share a phone number, address, etc, then that fact is preserved in the sanitized output.
 
@@ -50,6 +51,7 @@ Field-name rules are matched **in the order that they appear in configuration**.
 ```json
 { "in": "users.email", out: "generate(userEmail)" },
 { "in": "password_reset_requests.email", "out": "erase" },
+{ "in": "email_json", "out": "replace({})" },
 { "in": "email", "out": "erase" },
 ```
 
