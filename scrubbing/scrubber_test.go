@@ -11,14 +11,14 @@ import (
 const salt = "github.com/xeger/pipeclean/scrubbing"
 
 func scrub(s, field string) string {
-	return scrubSalted(s, field, "")
-}
-
-func scrubSalted(s, field, salt string) string {
 	return scrubbing.NewScrubber(salt, false, scrubbing.DefaultPolicy(), nil).ScrubString(s, []string{field})
 }
 
-func TestDeepJSON(t *testing.T) {
+func scrubWithPolicy(s, field string, policy *scrubbing.Policy) string {
+	return scrubbing.NewScrubber(salt, false, policy, nil).ScrubString(s, []string{field})
+}
+
+func TestDefaultDeepJSON(t *testing.T) {
 	in := `{"email":"joe@foo.com"}`
 	exp := `{"email":"jyv@iws.com"}`
 	if got := scrub(in, "someJsonField"); got != exp {
@@ -26,7 +26,7 @@ func TestDeepJSON(t *testing.T) {
 	}
 }
 
-func TestEmail(t *testing.T) {
+func TestDefaultEmail(t *testing.T) {
 	cases := map[string]string{
 		"joe@foo.com":        "jyv@iws.com",
 		"gophers@google.com": "hruhlic@mzovvt.com",
@@ -38,7 +38,7 @@ func TestEmail(t *testing.T) {
 	}
 }
 
-func TestHeuristic(t *testing.T) {
+func TestDefaultHeuristic(t *testing.T) {
 	models := map[string]nlp.Model{
 		"fruit": nlp.NewMatchModel([]*regexp.Regexp{regexp.MustCompile(`apple|orange`)}),
 	}
@@ -59,19 +59,36 @@ func TestHeuristic(t *testing.T) {
 	}
 }
 
-func TestNumerics(t *testing.T) {
+func TestDefaultNumerics(t *testing.T) {
 	if got := scrub("74", "someField"); got != "74" {
 		t.Errorf(`scrub(%q) = %q, want unchanged`, "74", got)
 	}
 }
 
-func TestTelUS(t *testing.T) {
+func TestDefaultTelUS(t *testing.T) {
 	cases := map[string]string{
 		"805-555-1212":   "606-245-3192",
 		"(805) 555-1212": "(606) 245-3192",
 	}
 	for in, exp := range cases {
 		if got := scrub(in, "phone"); got != exp {
+			t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
+		}
+	}
+}
+
+func TestReplacement(t *testing.T) {
+	cases := map[scrubbing.Disposition]string{
+		"replace({})":   "{}",
+		"replace((()))": "(())",
+	}
+	for in, exp := range cases {
+		policy := &scrubbing.Policy{
+			FieldName: []scrubbing.FieldNameRule{
+				{In: regexp.MustCompile("foo"), Out: in},
+			},
+		}
+		if got := scrubWithPolicy("replace-me", "foo", policy); got != exp {
 			t.Errorf(`scrub(%q) = %q, want %q`, in, got, exp)
 		}
 	}
