@@ -120,6 +120,8 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 			}
 		case "mask":
 			return sc.mask(s)
+		case "pass":
+			return s
 		case "replace":
 			// TODO
 			return sc.replace(s, disposition.Parameter())

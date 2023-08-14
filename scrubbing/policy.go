@@ -55,7 +55,7 @@ func (p Policy) Validate(models map[string]nlp.Model) []error {
 
 	for i, rule := range p.FieldName {
 		switch rule.Out.Action() {
-		case "erase", "mask", "replace":
+		case "erase", "mask", "pass", "replace":
 			continue
 		case "generate":
 			model := models[rule.Out.Parameter()]

@@ -1,6 +1,7 @@
 package scrubbing_test
 
 import (
+	"fmt"
 	"regexp"
 	"testing"
 
@@ -15,8 +16,8 @@ func scrub(s, field string) string {
 }
 
 func scrubWithPolicy(s, field string, policy *scrubbing.Policy, models map[string]nlp.Model) string {
-	if err := policy.Validate(models); err != nil {
-		panic(err)
+	if errs := policy.Validate(models); errs != nil {
+		panic(fmt.Sprintf("%v", errs))
 	}
 	return scrubbing.NewScrubber(salt, false, policy, models).ScrubString(s, []string{field})
 }
@@ -80,21 +81,38 @@ func TestDefaultTelUS(t *testing.T) {
 	}
 }
 
-func TestReplacement(t *testing.T) {
+func TestDispositionPass(t *testing.T) {
+	policy := &scrubbing.Policy{
+		FieldName: []scrubbing.FieldNameRule{
+			{In: regexp.MustCompile("foobar"), Out: "pass"},
+			{In: regexp.MustCompile("foo"), Out: "mask"},
+		},
+	}
+	s := "mask me"
+	masked := "ipir en"
+	if got := scrubWithPolicy(s, "foo", policy, nil); got != masked {
+		t.Errorf(`scrub(%q) = %q, want %q`, s, got, masked)
+	}
+	if got := scrubWithPolicy(s, "foobar", policy, nil); got != s {
+		t.Errorf(`scrub(%q) = %q, want %q`, s, got, s)
+	}
+}
+
+func TestDispositionReplace(t *testing.T) {
 	cases := map[scrubbing.Disposition]string{
 		"replace({})":   "{}",
 		"replace((()))": "(())",
 	}
 
 	for out, exp := range cases {
-		// asFieldName := &scrubbing.Policy{
-		// 	FieldName: []scrubbing.FieldNameRule{
-		// 		{In: regexp.MustCompile("foo"), Out: out},
-		// 	},
-		// }
-		// if got := scrubWithPolicy("replace-me", "foo", asFieldName, nil); got != exp {
-		// 	t.Errorf(`with FieldNameRule, scrub(%q) = %q, want %q`, out, got, exp)
-		// }
+		asFieldName := &scrubbing.Policy{
+			FieldName: []scrubbing.FieldNameRule{
+				{In: regexp.MustCompile("foo"), Out: out},
+			},
+		}
+		if got := scrubWithPolicy("replace-me", "foo", asFieldName, nil); got != exp {
+			t.Errorf(`with FieldNameRule, scrub(%q) = %q, want %q`, out, got, exp)
+		}
 
 		asHeuristic := &scrubbing.Policy{
 			Heuristic: []scrubbing.HeuristicRule{
