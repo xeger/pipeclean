@@ -81,6 +81,27 @@ func TestDefaultTelUS(t *testing.T) {
 	}
 }
 
+func TestDispositionMask(t *testing.T) {
+	field := "email" // rely on default policy, which masks fields containing "email" in their name
+
+	cases := map[string]string{
+		// should preserve the TLD component of email addresses
+		"joe@schmoe.com": "jyv@goeidn.com",
+		// should preserve filename extensions
+		"something.ipynb": "ptxrmpcyj.ipynb",
+		"something.pdf":   "ptxrmpcyj.pdf",
+		// should preserve URL protocol & TLD of hostname
+		"https://foo.something.com/baz/quux": "https://zxs.bqupfjauk.com/mgf/opij",
+		"https://intranet/baz/quux":          "https://ckvgbptu/mgf/opij",
+	}
+
+	for s, exp := range cases {
+		if got := scrub(s, field); got != exp {
+			t.Errorf(`scrub(%q) = %q, want %q`, s, got, exp)
+		}
+	}
+}
+
 func TestDispositionPass(t *testing.T) {
 	policy := &scrubbing.Policy{
 		FieldName: []scrubbing.FieldNameRule{

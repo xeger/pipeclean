@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"net/mail"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,18 +16,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var reBase64 = regexp.MustCompile(`^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$`)
-
-// Phrase that contains a numeric sequence (i.e. a street address).
-var reContainsNum = regexp.MustCompile(`#?[0-9-]{1,7}`)
-
-// Integer in decimal notation with optional leading sign.
-var reIntDec = regexp.MustCompile(`[+-]?0|[1-9]\d*`)
-
-// Telephone number.
-var reTelUS = regexp.MustCompile(`^\(?\d{3}\)?[ -]?\d{3}-?\d{4}$`)
-
-var reZip = regexp.MustCompile(`^\d{5}(-\d{4})?$`)
+var reShortExtension = regexp.MustCompile(`[.][a-z]{2,5}$`)
 
 type Scrubber struct {
 	maskAll  bool
@@ -190,21 +180,41 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 // Mask scrambles the numeric or alphabetic characters in a string, preserving
 // other characters (punctuation, etc) and preserving the length of the string.
 //
-// Some special-case logic handles the following cases:
+// Some special-case logic handles the following cases for short strings < 1KiB:
 //   - email addresses: TLD is left unmasked
+//   - filenames: extension up to five characters is left unmasked
 func (sc *Scrubber) mask(s string) string {
-	if len(s) < 1024 && strings.Index(s, " ") == -1 {
-		if a, _ := mail.ParseAddress(s); a != nil {
-			at := strings.Index(a.Address, "@")
-			local, domain := a.Address[:at], a.Address[at+1:]
-			dot := strings.LastIndex(domain, ".")
-			if dot > 0 {
-				tld := domain[dot+1:]
-				prefix := domain[0:dot]
-				return fmt.Sprintf("%s@%s.%s", sc.maskWord(local), sc.maskWord(prefix), tld)
-			} else {
-				return sc.maskWord(domain)
+	if len(s) < 1024 {
+		// Well-formed email address
+		if strings.Index(s, " ") == -1 {
+			if a, _ := mail.ParseAddress(s); a != nil {
+				at := strings.Index(a.Address, "@")
+				local, domain := a.Address[:at], a.Address[at+1:]
+				dot := strings.LastIndex(domain, ".")
+				if dot > 0 {
+					tld := domain[dot+1:]
+					prefix := domain[0:dot]
+					return fmt.Sprintf("%s@%s.%s", sc.maskWord(local), sc.maskWord(prefix), tld)
+				} else {
+					return sc.maskWord(domain)
+				}
 			}
+		}
+
+		// Extension (e.g. filename)
+		if loc := reShortExtension.FindStringIndex(s); loc != nil {
+			prefix, suffix := s[0:loc[0]], s[loc[0]:]
+			return fmt.Sprintf("%s%s", sc.maskWord(prefix), suffix)
+		}
+
+		if u, err := url.Parse(s); err == nil && u.Scheme != "" {
+			if dot := strings.LastIndex(u.Host, "."); dot >= 0 {
+				u.Host = sc.maskWord(u.Host[0:dot]) + u.Host[dot:]
+			} else {
+				u.Host = sc.maskWord(u.Host)
+			}
+			u.Path = sc.maskWord(u.Path)
+			return u.String()
 		}
 	}
 
