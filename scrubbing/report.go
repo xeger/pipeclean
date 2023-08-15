@@ -17,6 +17,8 @@ func (p Percentage) MarshalYAML() (interface{}, error) {
 type RuleReport struct {
 	// Defn is the rule definition expressed as a string with compact, human-readable notation.
 	Defn string
+	// Fields is a list of distinct field names that were handled by a particular rule.
+	Fields []string
 	// Freq records the frequency (0-100%) with which this rule was applied.
 	Freq Percentage
 	// Safe determines the frequency of sanitized outputs that did not coincide with any input.

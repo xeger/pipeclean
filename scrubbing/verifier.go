@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/xeger/pipeclean/rand"
+	"golang.org/x/exp/slices"
 )
 
 type Verifier struct {
@@ -95,7 +96,7 @@ func (v *Verifier) recordPass(in string, names []string) {
 }
 
 // NewVerifier creates a Scrubber linked to a Verifier.
-// After all scrubbing is complete, call the Verifier to produce statistics.
+// After all scrubbing is complete, call Report() to produce statistics.
 func NewVerifier(pol *Policy) *Verifier {
 	verifier := &Verifier{
 		policy:          pol,
@@ -130,6 +131,14 @@ func (v *Verifier) Report() *Report {
 	for i, rule := range v.policy.FieldName {
 		r.FieldName[i].Defn = rule.String()
 
+		if lfnf := len(v.fieldNameFields[i]); lfnf > 0 {
+			r.FieldName[i].Fields = make([]string, 0, lfnf)
+			for field, _ := range v.fieldNameFields[i] {
+				r.FieldName[i].Fields = append(r.FieldName[i].Fields, field)
+			}
+			slices.Sort(r.FieldName[i].Fields)
+		}
+
 		inOut := v.fieldNameInOut[i]
 		if inOut == nil {
 			continue
@@ -153,6 +162,14 @@ func (v *Verifier) Report() *Report {
 
 	for i, rule := range v.policy.Heuristic {
 		r.Heuristic[i].Defn = rule.String()
+
+		if lhf := len(v.heuristicFields[i]); lhf > 0 {
+			r.Heuristic[i].Fields = make([]string, 0, lhf)
+			for field, _ := range v.heuristicFields[i] {
+				r.Heuristic[i].Fields = append(r.Heuristic[i].Fields, field)
+			}
+			slices.Sort(r.Heuristic[i].Fields)
+		}
 
 		inOut := v.heuristicInOut[i]
 		if inOut == nil {
