@@ -35,15 +35,15 @@ func (v *scrubVisitor) ScrubStatement(stmt ast.StmtNode) (ast.StmtNode, bool) {
 }
 
 func (v *scrubVisitor) Enter(in ast.Node) (ast.Node, bool) {
-	switch st := in.(type) {
+	switch typed := in.(type) {
 	case *ast.TableName:
 		if v.insert != nil {
-			v.insert.tableName = st.Name.L
+			v.insert.tableName = typed.Name.L
 		}
 	case *ast.ColumnName:
 		// insert column names present in SQL source; accumulate them
 		if v.insert != nil {
-			v.insert.columnNames = append(v.insert.columnNames, st.Name.L)
+			v.insert.columnNames = append(v.insert.columnNames, typed.Name.L)
 		}
 	case *test_driver.ValueExpr:
 		if v.insert != nil {
@@ -54,10 +54,10 @@ func (v *scrubVisitor) Enter(in ast.Node) (ast.Node, bool) {
 			defer func() {
 				v.insert.valueIndex++
 			}()
-			switch st.Kind() {
+			switch typed.Kind() {
 			case test_driver.KindString:
 				datum := test_driver.Datum{}
-				s := st.Datum.GetString()
+				s := typed.Datum.GetString()
 				names := v.insert.Names()
 				if v.scrubber.EraseString(s, names) {
 					datum.SetNull()

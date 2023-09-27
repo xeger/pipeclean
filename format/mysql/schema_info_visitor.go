@@ -19,9 +19,9 @@ func (v *schemaInfoVisitor) ScanStatement(stmt ast.StmtNode) {
 }
 
 func (v *schemaInfoVisitor) Enter(in ast.Node) (ast.Node, bool) {
-	switch st := in.(type) {
+	switch typed := in.(type) {
 	case *ast.TableName:
-		v.tableName = st.Name.L
+		v.tableName = typed.Name.L
 		if v.info.TableColumns[v.tableName] == nil {
 			v.info.TableColumns[v.tableName] = make([]string, 0, 32)
 		}
@@ -29,7 +29,7 @@ func (v *schemaInfoVisitor) Enter(in ast.Node) (ast.Node, bool) {
 		v.columnDef = true
 	case *ast.ColumnName:
 		if v.columnDef {
-			v.info.TableColumns[v.tableName] = append(v.info.TableColumns[v.tableName], st.Name.L)
+			v.info.TableColumns[v.tableName] = append(v.info.TableColumns[v.tableName], typed.Name.L)
 		}
 	}
 	return in, false
