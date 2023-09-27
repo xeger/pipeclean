@@ -17,7 +17,10 @@ type insertState struct {
 func (is insertState) Names() []string {
 	names := make([]string, 0, 3)
 	if len(is.tableName) > 0 {
-		colIdx := is.valueIndex % len(is.columnNames)
+		colIdx := is.valueIndex
+		if len(is.columnNames) > 0 {
+			colIdx = colIdx % len(is.columnNames)
+		}
 		if len(is.columnNames) > 0 {
 			colName := is.columnNames[colIdx]
 			names = append(names, colName)
