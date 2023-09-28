@@ -11,12 +11,23 @@ type insertState struct {
 	tableName string
 	// List of column names (explicitly specified in current statement, or inferred from table schema).
 	columnNames []string
+	// Value tuple sizes of the current statement.
+	rowLength int
 	// Number of ValueExpr seen so far across all rows of current statement.
 	valueIndex int
 }
 
 func newInsertState(stmt *ast.InsertStmt) *insertState {
-	return &insertState{}
+	rowLength := 0
+	for _, list := range stmt.Lists {
+		if rowLength == 0 {
+			rowLength = len(list)
+		} else if len(list) != rowLength {
+			// TODO: handle this case by storing an array of row-tuple lengths & iterating through it
+			panic(fmt.Sprintf("inconsistent INSERT row lengths: %d prior vs %d next", rowLength, len(list)))
+		}
+	}
+	return &insertState{rowLength: rowLength}
 }
 
 // Advance increments the column-value index so that Names() remains accurate.
@@ -28,12 +39,12 @@ func (is *insertState) Advance() {
 // The list contains 0-3 elements depending on the completeness of the schema
 // information provided in context.
 func (is *insertState) Names() []string {
+	colIdx := is.valueIndex
+	if is.rowLength > 0 {
+		colIdx = colIdx % is.rowLength
+	}
 	names := make([]string, 0, 3)
 	if len(is.tableName) > 0 {
-		colIdx := is.valueIndex
-		if len(is.columnNames) > 0 {
-			colIdx = colIdx % len(is.columnNames)
-		}
 		if len(is.columnNames) > 0 {
 			colName := is.columnNames[colIdx]
 			names = append(names, colName)
