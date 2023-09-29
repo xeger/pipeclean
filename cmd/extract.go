@@ -25,7 +25,7 @@ func init() {
 
 func extract(cmd *cobra.Command, args []string) {
 	if len(args) != 1 {
-		ui.Fatalf("Must pass exactly one directory for model storage")
+		ui.Fatalf("Must pass exactly one field name to extract")
 		ui.Exit('-')
 	}
 
