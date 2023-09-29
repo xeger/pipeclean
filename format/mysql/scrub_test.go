@@ -3,7 +3,7 @@ package mysql_test
 import (
 	"bufio"
 	"bytes"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -14,7 +14,7 @@ import (
 var nullPolicy = &scrubbing.Policy{}
 
 func read(t *testing.T, name string) string {
-	data, err := ioutil.ReadFile("testdata/" + name)
+	data, err := os.ReadFile("testdata/" + name)
 	if err != nil {
 		t.Fatalf("Failed to read test file %s: %s", name, err)
 	}
