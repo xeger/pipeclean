@@ -16,7 +16,20 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// ReShortExtension identifies filename-like extensions at the end of strings.
 var reShortExtension = regexp.MustCompile(`[.][a-z]{2,5}$`)
+
+func isJsonData(s string) bool {
+	if len(s) >= 2 {
+		f, l := s[0], s[len(s)-1]
+		return (f == '{' && l == '}') || (f == '[' && l == ']')
+	}
+	return false
+}
+
+func isYamlData(s string) bool {
+	return strings.Index(s, "---\n") == 0
+}
 
 type Scrubber struct {
 	maskAll  bool
@@ -146,22 +159,24 @@ func (sc *Scrubber) ScrubString(s string, names []string) string {
 	if !sc.shallow {
 		var data any
 
-		if err := json.Unmarshal([]byte(s), &data); err == nil {
-			scrubbed, err := json.Marshal(sc.ScrubData(data, nil))
-			if err != nil {
-				ui.Fatal(err)
-			}
-			return string(scrubbed)
-		}
-
-		if err := yaml.Unmarshal([]byte(s), &data); err == nil {
-			switch v := data.(type) {
-			case []any, map[string]any:
-				scrubbed, err := yaml.Marshal(sc.ScrubData(v, nil))
+		if isJsonData(s) {
+			if err := json.Unmarshal([]byte(s), &data); err == nil {
+				scrubbed, err := json.Marshal(sc.ScrubData(data, nil))
 				if err != nil {
 					ui.Fatal(err)
 				}
 				return string(scrubbed)
+			}
+		} else if isYamlData(s) {
+			if err := yaml.Unmarshal([]byte(s), &data); err == nil {
+				switch v := data.(type) {
+				case []any, map[string]any:
+					scrubbed, err := yaml.Marshal(sc.ScrubData(v, nil))
+					if err != nil {
+						ui.Fatal(err)
+					}
+					return string(scrubbed)
+				}
 			}
 		}
 

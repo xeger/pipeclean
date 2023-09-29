@@ -16,10 +16,10 @@ type scrubVisitor struct {
 // May modify the AST in-place (and return it), or may return a derived AST.
 // Returns nil if the entire statement should be omitted from output.
 func (v *scrubVisitor) ScrubStatement(stmt ast.StmtNode) (ast.StmtNode, bool) {
-	switch stmt.(type) {
+	switch typed := stmt.(type) {
 	case *ast.InsertStmt:
 		if doInserts {
-			v.insert = &insertState{}
+			v.insert = newInsertState(typed)
 			stmt.Accept(v)
 			v.insert = nil
 			return stmt, true
@@ -35,29 +35,26 @@ func (v *scrubVisitor) ScrubStatement(stmt ast.StmtNode) (ast.StmtNode, bool) {
 }
 
 func (v *scrubVisitor) Enter(in ast.Node) (ast.Node, bool) {
-	switch st := in.(type) {
+	switch typed := in.(type) {
 	case *ast.TableName:
 		if v.insert != nil {
-			v.insert.tableName = st.Name.L
+			v.insert.tableName = typed.Name.L
 		}
 	case *ast.ColumnName:
 		// insert column names present in SQL source; accumulate them
 		if v.insert != nil {
-			v.insert.columnNames = append(v.insert.columnNames, st.Name.L)
+			v.insert.columnNames = append(v.insert.columnNames, typed.Name.L)
 		}
 	case *test_driver.ValueExpr:
 		if v.insert != nil {
-			// column names omitted from SQL source; infer from table schema
-			if v.insert.valueIndex == 0 && len(v.insert.columnNames) == 0 {
-				v.insert.columnNames = v.ctx.TableColumns[v.insert.tableName]
-			}
+			v.insert.ObserveContext(v.ctx)
 			defer func() {
-				v.insert.valueIndex++
+				v.insert.Advance()
 			}()
-			switch st.Kind() {
+			switch typed.Kind() {
 			case test_driver.KindString:
 				datum := test_driver.Datum{}
-				s := st.Datum.GetString()
+				s := typed.Datum.GetString()
 				names := v.insert.Names()
 				if v.scrubber.EraseString(s, names) {
 					datum.SetNull()

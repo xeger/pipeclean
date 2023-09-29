@@ -3,7 +3,7 @@ package mysql_test
 import (
 	"bufio"
 	"bytes"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -11,8 +11,10 @@ import (
 	"github.com/xeger/pipeclean/scrubbing"
 )
 
+var nullPolicy = &scrubbing.Policy{}
+
 func read(t *testing.T, name string) string {
-	data, err := ioutil.ReadFile("testdata/" + name)
+	data, err := os.ReadFile("testdata/" + name)
 	if err != nil {
 		t.Fatalf("Failed to read test file %s: %s", name, err)
 	}
@@ -20,6 +22,10 @@ func read(t *testing.T, name string) string {
 }
 
 func scrub(ctx *mysql.Context, input string) string {
+	return scrubPolicy(ctx, input, scrubbing.DefaultPolicy())
+}
+
+func scrubPolicy(ctx *mysql.Context, input string, policy *scrubbing.Policy) string {
 	reader := bufio.NewReader(bytes.NewBufferString(input))
 	in := make(chan string)
 
@@ -27,7 +33,7 @@ func scrub(ctx *mysql.Context, input string) string {
 	output := bytes.NewBuffer(make([]byte, 0, len(input)))
 	writer := bufio.NewWriter(output)
 
-	scrubber := scrubbing.NewScrubber("", false, scrubbing.DefaultPolicy(), nil)
+	scrubber := scrubbing.NewScrubber("", false, policy, nil)
 	go mysql.ScrubChan(ctx, scrubber, in, out)
 
 	for {
@@ -95,4 +101,12 @@ func TestInsertPositional(t *testing.T) {
 	if strings.Index(output, "UNLOCK TABLES") < 0 {
 		t.Errorf("UNLOCK TABLES statement is missing")
 	}
+}
+
+func TestInsertPositionalNoScan(t *testing.T) {
+	input := read(t, "insert-positional.sql")
+
+	ctx := mysql.NewContext()
+	// output may not be useful, but it shouldn't crash if there are no column names to work with!
+	scrub(ctx, input)
 }

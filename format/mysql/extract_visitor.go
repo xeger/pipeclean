@@ -14,9 +14,9 @@ type extractVisitor struct {
 
 // ExtractStatement pulls interesting field values from INSERT statements.
 func (v *extractVisitor) ExtractStatement(stmt ast.StmtNode) []string {
-	switch stmt.(type) {
+	switch typed := stmt.(type) {
 	case *ast.InsertStmt:
-		v.insert = &insertState{}
+		v.insert = newInsertState(typed)
 		v.values = []string{}
 		stmt.Accept(v)
 		v.insert = nil
@@ -25,31 +25,28 @@ func (v *extractVisitor) ExtractStatement(stmt ast.StmtNode) []string {
 }
 
 func (v *extractVisitor) Enter(in ast.Node) (ast.Node, bool) {
-	switch st := in.(type) {
+	switch typed := in.(type) {
 	case *ast.TableName:
 		if v.insert != nil {
-			v.insert.tableName = st.Name.L
+			v.insert.tableName = typed.Name.L
 		}
 	case *ast.ColumnName:
 		// insert column names present in SQL source; accumulate them
 		if v.insert != nil {
-			v.insert.columnNames = append(v.insert.columnNames, st.Name.L)
+			v.insert.columnNames = append(v.insert.columnNames, typed.Name.L)
 		}
 	case *test_driver.ValueExpr:
 		if v.insert != nil {
-			// column names omitted from SQL source; infer from table schema
-			if v.insert.valueIndex == 0 && len(v.insert.columnNames) == 0 {
-				v.insert.columnNames = v.ctx.TableColumns[v.insert.tableName]
-			}
+			v.insert.ObserveContext(v.ctx)
 			defer func() {
-				v.insert.valueIndex++
+				v.insert.Advance()
 			}()
-			switch st.Kind() {
+			switch typed.Kind() {
 			case test_driver.KindString:
 				if v.MatchFieldName(v.insert.Names()) {
-					v.values = append(v.values, st.Datum.GetString())
+					v.values = append(v.values, typed.Datum.GetString())
 				}
-				return st, true
+				return typed, true
 			}
 		}
 	}

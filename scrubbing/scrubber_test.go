@@ -1,7 +1,10 @@
 package scrubbing_test
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"reflect"
 	"regexp"
 	"testing"
 
@@ -10,6 +13,24 @@ import (
 )
 
 const salt = "github.com/xeger/pipeclean/scrubbing"
+
+var nullPolicy = &scrubbing.Policy{}
+
+func read(t *testing.T, name string) string {
+	data, err := os.ReadFile("testdata/" + name)
+	if err != nil {
+		t.Fatalf("Failed to read test file %s: %s", name, err)
+	}
+	return string(data)
+}
+
+func unmarshalJSON(t *testing.T, s string) any {
+	var data any
+	if err := json.Unmarshal([]byte(s), &data); err != nil {
+		t.Fatalf(`invalid fixture: %s`, err)
+	}
+	return data
+}
 
 func scrub(s, field string) string {
 	return scrubbing.NewScrubber(salt, false, scrubbing.DefaultPolicy(), nil).ScrubString(s, []string{field})
@@ -146,5 +167,17 @@ func TestDispositionReplace(t *testing.T) {
 		if got := scrubWithPolicy(`{\"p\": \"\"}`, "foo", asHeuristic, models); got != exp {
 			t.Errorf(`with HeuristicRule, scrub(%q) = %q, want %q`, out, got, exp)
 		}
+	}
+}
+
+func TestDataPreserveJSON(t *testing.T) {
+	stringBefore := read(t, "quill-delta.json")
+	dataBefore := unmarshalJSON(t, stringBefore)
+
+	stringAfter := scrubWithPolicy(stringBefore, "irrelevant", nullPolicy, nil)
+	dataAfter := unmarshalJSON(t, stringAfter)
+
+	if !reflect.DeepEqual(dataBefore, dataAfter) {
+		t.Errorf("scrubbed JSON does not match original under null policy!")
 	}
 }
