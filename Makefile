@@ -12,13 +12,13 @@ bin/pipeclean-darwin-amd64:
 	env GOOS=darwin GOARCH=amd64 go build -o bin/pipeclean-darwin-amd64
 
 bin/pipeclean-darwin-arm64:
-	env GOOS=darwin GOARCH=amd64 go build -o bin/pipeclean-darwin-arm64
+	env GOOS=darwin GOARCH=arm64 go build -o bin/pipeclean-darwin-arm64
 
 bin/pipeclean-linux-amd64:
 	env GOOS=linux GOARCH=amd64 go build -o bin/pipeclean-linux-amd64
 
 bin/pipeclean-linux-arm64:
-	env GOOS=linux GOARCH=amd64 go build -o bin/pipeclean-linux-arm64
+	env GOOS=linux GOARCH=arm64 go build -o bin/pipeclean-linux-arm64
 
 benchmark:
 	time cat $(DATA)/sql/benchmark.sql | ./pipeclean learn -c $(DATA)/config.json -r -x $(DATA)/sql/schema.sql $(DATA)/models
