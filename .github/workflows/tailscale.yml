@@ -1,0 +1,25 @@
+name: TailScale
+
+on:
+  workflow_dispatch:
+
+jobs:
+  tailscale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: tailscale/github-action@v2
+        with:
+          args: --ssh
+          hostname: ${{ github.actor }}-${{ github.job }}
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+      - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.22
+      - name: Wait for SSH
+        run: |
+          whoami
+          sleep 900
